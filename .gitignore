@@ -1,0 +1,37 @@
+# Firebase Config com credenciais (opcional - pode commitar)
+# Descomente a linha abaixo se quiser manter as credenciais locais apenas
+# firebase-config.js
+
+# Node modules (se adicionar ferramentas de build)
+node_modules/
+package-lock.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build files (se usar build tools no futuro)
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp

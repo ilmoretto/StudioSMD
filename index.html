@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Ordens de Serviço</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <h1>🎵 Gerenciador de OS</h1>
+            <p>Sistema de Gestão - Estúdio de Áudio</p>
+            
+            <div class="login-form">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">E-mail:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Senha:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">🔐 Entrar</button>
+                </form>
+                
+                <div class="divider">ou</div>
+                
+                <button id="btnGoogleLogin" class="btn btn-google btn-block">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                    Entrar com Google
+                </button>
+                
+                <div class="login-footer">
+                    <p>Não tem conta? <a href="#" id="showRegister">Criar conta</a></p>
+                </div>
+            </div>
+            
+            <!-- Registro -->
+            <div class="login-form hidden" id="registerForm">
+                <h2>Criar Conta</h2>
+                <form id="registerFormSubmit">
+                    <div class="form-group">
+                        <label for="registerName">Nome:</label>
+                        <input type="text" id="registerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">E-mail:</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Senha:</label>
+                        <input type="password" id="registerPassword" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">✅ Criar Conta</button>
+                </form>
+                
+                <div class="login-footer">
+                    <p>Já tem conta? <a href="#" id="showLogin">Fazer login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Principal -->
+    <div id="appScreen" class="hidden">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div>
+                        <h1>🎵 Gerenciador de Ordens de Serviço</h1>
+                        <p>Sistema de Gestão - Estúdio de Áudio</p>
+                    </div>
+                    <div class="user-info">
+                        <span id="userName">Usuário</span>
+                        <button id="btnLogout" class="btn btn-secondary">🚪 Sair</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Seção de Busca e Cadastro de Clientes -->
+            <section class="client-section">
+                <h2>Clientes</h2>
+                
+                <div class="client-actions">
+                    <button id="btnNovoCliente" class="btn btn-primary">➕ Novo Cliente</button>
+                    <div class="search-box">
+                        <input type="text" id="searchClient" placeholder="🔍 Buscar cliente...">
+                    </div>
+                </div>
+
+                <!-- Lista de Clientes -->
+                <div id="clientList" class="client-list">
+                    <div class="loading">Carregando clientes...</div>
+                </div>
+
+                <!-- Formulário de Cadastro de Cliente -->
+                <div id="clientForm" class="client-form hidden">
+                    <h3>Cadastro de Cliente</h3>
+                    <form id="formCliente">
+                        <div class="form-group">
+                            <label for="clientName">Nome Completo:</label>
+                            <input type="text" id="clientName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientPhone">Telefone:</label>
+                            <input type="tel" id="clientPhone" placeholder="(69) 99999-9999" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientAddress">Residência/Domicílio:</label>
+                            <input type="text" id="clientAddress">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientEmail">E-mail:</label>
+                            <input type="email" id="clientEmail">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">💾 Salvar Cliente</button>
+                            <button type="button" id="btnCancelar" class="btn btn-secondary">❌ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Seção da Ordem de Serviço -->
+            <section class="os-section" id="osSection">
+                <h2>Ordem de Serviço</h2>
+
+                <div class="os-header">
+                    <div class="form-group">
+                        <label for="osNumber">Nº da OS:</label>
+                        <input type="text" id="osNumber" placeholder="001/2024">
+                    </div>
+                    <div class="form-group">
+                        <label for="osDate">Data:</label>
+                        <input type="date" id="osDate">
+                    </div>
+                </div>
+
+                <!-- Dados do Cliente Selecionado -->
+                <div id="selectedClient" class="selected-client empty">
+                    <h3>Cliente Selecionado</h3>
+                    <p>Nenhum cliente selecionado. Cadastre ou selecione um cliente acima.</p>
+                </div>
+
+                <!-- Detalhamento do Serviço -->
+                <div class="service-details">
+                    <h3>Detalhamento do Serviço</h3>
+                    
+                    <div class="service-category">
+                        <h4>Pré-produção:</h4>
+                        <label><input type="checkbox" name="service" value="Planejamento"> Planejamento</label>
+                        <label><input type="checkbox" name="service" value="Testes"> Testes</label>
+                        <label><input type="checkbox" name="service" value="Ensaio"> Ensaio</label>
+                        <label><input type="checkbox" name="service" value="Partitura"> Partitura</label>
+                        <label><input type="checkbox" name="service" value="Arranjo"> Arranjo</label>
+                    </div>
+
+                    <div class="service-category">
+                        <h4>Produção:</h4>
+                        <label><input type="checkbox" name="service" value="Gravação"> Gravação</label>
+                        <label><input type="checkbox" name="service" value="Masterização"> Masterização</label>
+                        <label><input type="checkbox" name="service" value="Edição"> Edição</label>
+                        <label><input type="checkbox" name="service" value="Mixagem"> Mixagem</label>
+                        <label><input type="checkbox" name="service" value="Captação ao vivo"> Captação ao vivo</label>
+                        <label><input type="checkbox" name="service" value="VS/Playback/Trilha de apoio"> VS / Playback / Trilha de apoio</label>
+                        <label><input type="checkbox" name="service" value="Podcast/Audiobook"> Podcast / Audiobook</label>
+                        <label><input type="checkbox" name="service" value="Reamping"> Reamping</label>
+                        <label><input type="checkbox" name="service" value="Sound Design/Efeitos Sonoros"> Sound Design / Efeitos Sonoros</label>
+                        <label><input type="checkbox" name="service" value="Trilha Sonora/Música Original"> Trilha Sonora / Música Original</label>
+                    </div>
+
+                    <div class="service-category">
+                        <h4>Pós-produção:</h4>
+                        <label><input type="checkbox" name="service" value="Filmagem de estúdio/making of"> Filmagem de estúdio / making of</label>
+                        <label><input type="checkbox" name="service" value="Fotografia de estúdio"> Fotografia de estúdio</label>
+                        <label><input type="checkbox" name="service" value="Vídeos conceituais"> Vídeos conceituais (animações ou takes abstratos)</label>
+                        <label><input type="checkbox" name="service" value="Distribuição em Plataformas Streaming"> Distribuição em Plataformas Streaming</label>
+                        <label><input type="checkbox" name="service" value="Personalização de perfil"> Personalização de perfil</label>
+                        <div class="form-group">
+                            <label for="outroServico">Outro:</label>
+                            <input type="text" id="outroServico" placeholder="Especifique outro serviço...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descrição Detalhada -->
+                <div class="form-group">
+                    <label for="serviceDescription">Descrição detalhada do serviço:</label>
+                    <textarea id="serviceDescription" rows="4"></textarea>
+                </div>
+
+                <!-- Agenda -->
+                <div class="schedule-section">
+                    <h3>Agenda e Profissional Responsável</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="execDate">Data da execução:</label>
+                            <input type="date" id="execDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="execTime">Horário:</label>
+                            <input type="time" id="execTime">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tempo Estimado:</label>
+                        <div class="time-options">
+                            <label><input type="radio" name="estimatedTime" value="30 minutos"> 30 minutos</label>
+                            <label><input type="radio" name="estimatedTime" value="50 minutos"> 50 minutos</label>
+                            <label><input type="radio" name="estimatedTime" value="1 hora"> 1 hora</label>
+                            <label><input type="radio" name="estimatedTime" value="1h30min"> 1h30min</label>
+                            <label><input type="radio" name="estimatedTime" value="2 horas"> 2 horas</label>
+                            <label><input type="radio" name="estimatedTime" value="2h30min"> 2h30min</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Condições e Valores -->
+                <div class="payment-section">
+                    <h3>Condições e Valores</h3>
+                    <div class="form-group">
+                        <label for="totalValue">Valor total do serviço:</label>
+                        <input type="text" id="totalValue" placeholder="R$ 0,00">
+                    </div>
+                    <div class="form-group">
+                        <label>Forma de pagamento:</label>
+                        <div class="payment-options">
+                            <label><input type="checkbox" name="payment" value="Pix"> Pix</label>
+                            <label><input type="checkbox" name="payment" value="Cartão"> Cartão</label>
+                            <label><input type="checkbox" name="payment" value="Dinheiro"> Dinheiro</label>
+                            <label><input type="checkbox" name="payment" value="Boleto"> Boleto</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="paymentDate">Pagamento efetuado em:</label>
+                        <input type="date" id="paymentDate">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="btnGerarOS" class="btn btn-success btn-large">🖨️ Gerar Ordem de Serviço para Impressão</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Config -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
