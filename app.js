@@ -127,6 +127,9 @@ class ServiceOrderManager {
         document.getElementById('formCliente').addEventListener('submit', (e) => this.saveClient(e));
         document.getElementById('searchClient').addEventListener('input', (e) => this.searchClients(e.target.value));
         
+        // Formatação de telefone
+        document.getElementById('clientPhone').addEventListener('input', (e) => this.formatPhone(e));
+        
         // === OS EVENTS ===
         document.getElementById('btnGerarOS').addEventListener('click', () => this.generateServiceOrder());
         document.getElementById('totalValue').addEventListener('input', (e) => this.formatCurrency(e));
@@ -285,13 +288,50 @@ class ServiceOrderManager {
             return;
         }
 
+        // Capturar e validar dados do formulário
+        const name = document.getElementById('clientName').value.trim();
+        const phone = document.getElementById('clientPhone').value.trim();
+        const birthDate = document.getElementById('clientBirthDate').value;
+        const rg = document.getElementById('clientRG').value.trim();
+        const cpf = document.getElementById('clientCPF').value.trim();
+        const email = document.getElementById('clientEmail').value.trim();
+        const address = document.getElementById('clientAddress').value.trim();
+
+        // Validar campos obrigatórios
+        if (!name) {
+            this.showNotification('Nome é obrigatório', 'error');
+            return;
+        }
+        if (!birthDate) {
+            this.showNotification('Data de nascimento é obrigatória', 'error');
+            return;
+        }
+        if (!rg) {
+            this.showNotification('RG é obrigatório', 'error');
+            return;
+        }
+        if (!cpf) {
+            this.showNotification('CPF é obrigatório', 'error');
+            return;
+        }
+        if (!email) {
+            this.showNotification('E-mail é obrigatório', 'error');
+            return;
+        }
+        if (!address) {
+            this.showNotification('Endereço é obrigatório', 'error');
+            return;
+        }
+
+        // Limitar tamanho dos campos para evitar problemas
         const client = {
-            name: document.getElementById('clientName').value.trim(),
-            birthDate: document.getElementById('clientBirthDate').value,
-            rg: document.getElementById('clientRG').value.trim(),
-            cpf: document.getElementById('clientCPF').value.trim(),
-            email: document.getElementById('clientEmail').value.trim(),
-            address: document.getElementById('clientAddress').value.trim(),
+            name: name.substring(0, 100),
+            phone: phone.replace(/\D/g, '').substring(0, 11), // Apenas números, max 11 dígitos
+            birthDate: birthDate,
+            rg: rg.substring(0, 20),
+            cpf: cpf.replace(/\D/g, '').substring(0, 11), // Apenas números
+            email: email.substring(0, 100),
+            address: address.substring(0, 200),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -343,6 +383,7 @@ class ServiceOrderManager {
                  data-id="${client.id}">
                 <div class="client-name">${client.name}</div>
                 <div class="client-info">
+                    <div>Telefone: ${this.formatPhoneDisplay(client.phone)}</div>
                     <div>CPF: ${client.cpf || 'Não informado'}</div>
                     <div>Email: ${client.email || 'Não informado'}</div>
                 </div>
@@ -383,6 +424,7 @@ class ServiceOrderManager {
             <h3>Cliente Selecionado</h3>
             <div class="client-details">
                 <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
+                <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(this.selectedClient.phone)}</p>
                 <p><strong>Data de Nascimento:</strong> ${birthDate}</p>
                 <p><strong>RG:</strong> ${this.selectedClient.rg || 'Não informado'}</p>
                 <p><strong>CPF:</strong> ${this.selectedClient.cpf || 'Não informado'}</p>
@@ -403,6 +445,44 @@ class ServiceOrderManager {
         let value = e.target.value.replace(/\D/g, '');
         value = (parseInt(value) / 100).toFixed(2);
         e.target.value = 'R$ ' + value.replace('.', ',');
+    }
+
+    formatPhone(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        // Limitar a 11 dígitos
+        if (value.length > 11) {
+            value = value.substring(0, 11);
+        }
+        
+        // Aplicar formatação
+        if (value.length <= 2) {
+            value = value.replace(/(\d{0,2})/, '($1');
+        } else if (value.length <= 7) {
+            value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+        } else {
+            value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+        }
+        
+        e.target.value = value;
+    }
+
+    formatPhoneDisplay(phone) {
+        if (!phone) return 'Não informado';
+        
+        // Remove todos os caracteres não numéricos
+        const cleaned = phone.replace(/\D/g, '');
+        
+        // Formatar conforme o tamanho
+        if (cleaned.length === 10) {
+            return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else if (cleaned.length === 11) {
+            return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        } else if (cleaned.length > 0) {
+            return `(${cleaned.substring(0,2)}) ${cleaned.substring(2)}`;
+        } else {
+            return 'Não informado';
+        }
     }
 
     getSelectedServices() {
@@ -591,6 +671,7 @@ class ServiceOrderManager {
         <h2>Dados do Cliente</h2>
         <div class="client-info">
             <p><strong>Nome Completo:</strong> ${data.client.name}</p>
+            <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(data.client.phone)}</p>
             <p><strong>CPF:</strong> ${data.client.cpf || 'Não informado'}</p>
             <p><strong>RG:</strong> ${data.client.rg || 'Não informado'}</p>
             <p><strong>E-mail:</strong> ${data.client.email || 'Não informado'}</p>
