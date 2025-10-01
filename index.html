@@ -101,15 +101,9 @@
                 <div id="clientForm" class="client-form hidden">
                     <h3>Cadastro de Cliente</h3>
                     <form id="formCliente">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="clientName">Nome Completo:</label>
-                                <input type="text" id="clientName" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="clientPhone">Telefone:</label>
-                                <input type="tel" id="clientPhone" placeholder="(69) 99999-9999">
-                            </div>
+                        <div class="form-group">
+                            <label for="clientName">Nome Completo:</label>
+                            <input type="text" id="clientName" required>
                         </div>
                         
                         <div class="form-row">
@@ -123,9 +117,15 @@
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="clientEmail">E-mail:</label>
-                            <input type="email" id="clientEmail" required>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="clientCPF">CPF:</label>
+                                <input type="text" id="clientCPF" placeholder="123.456.789-00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="clientEmail">E-mail:</label>
+                                <input type="email" id="clientEmail" required>
+                            </div>
                         </div>
                         
                         <div class="form-group">

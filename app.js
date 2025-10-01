@@ -127,9 +127,6 @@ class ServiceOrderManager {
         document.getElementById('formCliente').addEventListener('submit', (e) => this.saveClient(e));
         document.getElementById('searchClient').addEventListener('input', (e) => this.searchClients(e.target.value));
         
-        // Formatação de telefone
-        document.getElementById('clientPhone').addEventListener('input', (e) => this.formatPhone(e));
-        
         // === OS EVENTS ===
         document.getElementById('btnGerarOS').addEventListener('click', () => this.generateServiceOrder());
         document.getElementById('totalValue').addEventListener('input', (e) => this.formatCurrency(e));
@@ -288,31 +285,12 @@ class ServiceOrderManager {
             return;
         }
 
-        // Verificar se todos os campos obrigatórios estão preenchidos
-        const name = document.getElementById('clientName').value.trim();
-        const phone = document.getElementById('clientPhone').value.trim();
-        const email = document.getElementById('clientEmail').value.trim();
-        
-        if (!name) {
-            this.showNotification('O nome é obrigatório', 'error');
-            return;
-        }
-
-        if (!email) {
-            this.showNotification('O email é obrigatório', 'error');
-            return;
-        }
-
-        // Limpar formatação do telefone para salvar apenas números
-        const cleanPhone = phone.replace(/\D/g, '');
-        
         const client = {
-            name: name,
-            phone: cleanPhone, // Salvar apenas números
+            name: document.getElementById('clientName').value.trim(),
             birthDate: document.getElementById('clientBirthDate').value,
             rg: document.getElementById('clientRG').value.trim(),
             cpf: document.getElementById('clientCPF').value.trim(),
-            email: email,
+            email: document.getElementById('clientEmail').value.trim(),
             address: document.getElementById('clientAddress').value.trim(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -365,7 +343,6 @@ class ServiceOrderManager {
                  data-id="${client.id}">
                 <div class="client-name">${client.name}</div>
                 <div class="client-info">
-                    <div>Telefone: ${this.formatPhoneDisplay(client.phone)}</div>
                     <div>CPF: ${client.cpf || 'Não informado'}</div>
                     <div>Email: ${client.email || 'Não informado'}</div>
                 </div>
@@ -406,7 +383,6 @@ class ServiceOrderManager {
             <h3>Cliente Selecionado</h3>
             <div class="client-details">
                 <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
-                <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(this.selectedClient.phone)}</p>
                 <p><strong>Data de Nascimento:</strong> ${birthDate}</p>
                 <p><strong>RG:</strong> ${this.selectedClient.rg || 'Não informado'}</p>
                 <p><strong>CPF:</strong> ${this.selectedClient.cpf || 'Não informado'}</p>
@@ -421,38 +397,6 @@ class ServiceOrderManager {
     setDefaultDate() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('osDate').value = today;
-    }
-
-    formatPhone(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        
-        if (value.length <= 11) {
-            if (value.length <= 2) {
-                value = value.replace(/(\d{0,2})/, '($1');
-            } else if (value.length <= 7) {
-                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
-            } else {
-                value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
-            }
-        }
-        
-        e.target.value = value;
-    }
-
-    formatPhoneDisplay(phone) {
-        if (!phone) return 'Não informado';
-        
-        // Remove todos os caracteres não numéricos
-        const cleaned = phone.replace(/\D/g, '');
-        
-        // Formatar conforme o tamanho
-        if (cleaned.length === 10) {
-            return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-        } else if (cleaned.length === 11) {
-            return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-        } else {
-            return phone; // Retorna como está se não conseguir formatar
-        }
     }
 
     formatCurrency(e) {
@@ -647,7 +591,6 @@ class ServiceOrderManager {
         <h2>Dados do Cliente</h2>
         <div class="client-info">
             <p><strong>Nome Completo:</strong> ${data.client.name}</p>
-            <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(data.client.phone)}</p>
             <p><strong>CPF:</strong> ${data.client.cpf || 'Não informado'}</p>
             <p><strong>RG:</strong> ${data.client.rg || 'Não informado'}</p>
             <p><strong>E-mail:</strong> ${data.client.email || 'Não informado'}</p>
