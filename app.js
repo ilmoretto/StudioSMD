@@ -293,14 +293,22 @@ class ServiceOrderManager {
         const phone = document.getElementById('clientPhone').value.trim();
         const email = document.getElementById('clientEmail').value.trim();
         
-        if (!name || !phone || !email) {
-            this.showNotification('Preencha todos os campos obrigatórios', 'error');
+        if (!name) {
+            this.showNotification('O nome é obrigatório', 'error');
             return;
         }
 
+        if (!email) {
+            this.showNotification('O email é obrigatório', 'error');
+            return;
+        }
+
+        // Limpar formatação do telefone para salvar apenas números
+        const cleanPhone = phone.replace(/\D/g, '');
+        
         const client = {
             name: name,
-            phone: phone,
+            phone: cleanPhone, // Salvar apenas números
             birthDate: document.getElementById('clientBirthDate').value,
             rg: document.getElementById('clientRG').value.trim(),
             cpf: document.getElementById('clientCPF').value.trim(),
@@ -357,7 +365,7 @@ class ServiceOrderManager {
                  data-id="${client.id}">
                 <div class="client-name">${client.name}</div>
                 <div class="client-info">
-                    <div>Telefone: ${client.phone || 'Não informado'}</div>
+                    <div>Telefone: ${this.formatPhoneDisplay(client.phone)}</div>
                     <div>CPF: ${client.cpf || 'Não informado'}</div>
                     <div>Email: ${client.email || 'Não informado'}</div>
                 </div>
@@ -398,7 +406,7 @@ class ServiceOrderManager {
             <h3>Cliente Selecionado</h3>
             <div class="client-details">
                 <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
-                <p><strong>Telefone:</strong> ${this.selectedClient.phone || 'Não informado'}</p>
+                <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(this.selectedClient.phone)}</p>
                 <p><strong>Data de Nascimento:</strong> ${birthDate}</p>
                 <p><strong>RG:</strong> ${this.selectedClient.rg || 'Não informado'}</p>
                 <p><strong>CPF:</strong> ${this.selectedClient.cpf || 'Não informado'}</p>
@@ -429,6 +437,22 @@ class ServiceOrderManager {
         }
         
         e.target.value = value;
+    }
+
+    formatPhoneDisplay(phone) {
+        if (!phone) return 'Não informado';
+        
+        // Remove todos os caracteres não numéricos
+        const cleaned = phone.replace(/\D/g, '');
+        
+        // Formatar conforme o tamanho
+        if (cleaned.length === 10) {
+            return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else if (cleaned.length === 11) {
+            return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        } else {
+            return phone; // Retorna como está se não conseguir formatar
+        }
     }
 
     formatCurrency(e) {
@@ -623,7 +647,7 @@ class ServiceOrderManager {
         <h2>Dados do Cliente</h2>
         <div class="client-info">
             <p><strong>Nome Completo:</strong> ${data.client.name}</p>
-            <p><strong>Telefone:</strong> ${data.client.phone || 'Não informado'}</p>
+            <p><strong>Telefone:</strong> ${this.formatPhoneDisplay(data.client.phone)}</p>
             <p><strong>CPF:</strong> ${data.client.cpf || 'Não informado'}</p>
             <p><strong>RG:</strong> ${data.client.rg || 'Não informado'}</p>
             <p><strong>E-mail:</strong> ${data.client.email || 'Não informado'}</p>
