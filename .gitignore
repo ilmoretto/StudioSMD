@@ -1,6 +1,6 @@
 # Firebase Config com credenciais (opcional - pode commitar)
 # Descomente a linha abaixo se quiser manter as credenciais locais apenas
-# firebase-config.js
+firebase-config.js
 
 # Node modules (se adicionar ferramentas de build)
 node_modules/
