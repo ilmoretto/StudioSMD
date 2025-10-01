@@ -106,6 +106,9 @@ class ServiceOrderManager {
         document.getElementById('formCliente').addEventListener('submit', (e) => this.saveClient(e));
         document.getElementById('searchClient').addEventListener('input', (e) => this.searchClients(e.target.value));
         
+        // Formatação de telefone
+        document.getElementById('clientPhone').addEventListener('input', (e) => this.formatPhone(e));
+        
         // === OS EVENTS ===
         document.getElementById('btnGerarOS').addEventListener('click', () => this.generateServiceOrder());
         document.getElementById('totalValue').addEventListener('input', (e) => this.formatCurrency(e));
@@ -251,6 +254,7 @@ class ServiceOrderManager {
 
         const client = {
             name: document.getElementById('clientName').value,
+            phone: document.getElementById('clientPhone').value,
             birthDate: document.getElementById('clientBirthDate').value,
             rg: document.getElementById('clientRG').value,
             cpf: document.getElementById('clientCPF').value,
@@ -302,9 +306,9 @@ class ServiceOrderManager {
                  data-id="${client.id}">
                 <div class="client-name">${client.name}</div>
                 <div class="client-info">
+                    <div>Telefone: ${client.phone || 'Não informado'}</div>
                     <div>CPF: ${client.cpf || 'Não informado'}</div>
                     <div>Email: ${client.email || 'Não informado'}</div>
-                    <div>RG: ${client.rg || 'Não informado'}</div>
                 </div>
             </div>
         `).join('');
@@ -343,6 +347,7 @@ class ServiceOrderManager {
             <h3>Cliente Selecionado</h3>
             <div class="client-details">
                 <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
+                <p><strong>Telefone:</strong> ${this.selectedClient.phone || 'Não informado'}</p>
                 <p><strong>Data de Nascimento:</strong> ${birthDate}</p>
                 <p><strong>RG:</strong> ${this.selectedClient.rg || 'Não informado'}</p>
                 <p><strong>CPF:</strong> ${this.selectedClient.cpf || 'Não informado'}</p>
@@ -357,6 +362,22 @@ class ServiceOrderManager {
     setDefaultDate() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('osDate').value = today;
+    }
+
+    formatPhone(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        if (value.length <= 11) {
+            if (value.length <= 2) {
+                value = value.replace(/(\d{0,2})/, '($1');
+            } else if (value.length <= 7) {
+                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            } else {
+                value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+            }
+        }
+        
+        e.target.value = value;
     }
 
     formatCurrency(e) {
@@ -551,6 +572,7 @@ class ServiceOrderManager {
         <h2>Dados do Cliente</h2>
         <div class="client-info">
             <p><strong>Nome Completo:</strong> ${data.client.name}</p>
+            <p><strong>Telefone:</strong> ${data.client.phone || 'Não informado'}</p>
             <p><strong>CPF:</strong> ${data.client.cpf || 'Não informado'}</p>
             <p><strong>RG:</strong> ${data.client.rg || 'Não informado'}</p>
             <p><strong>E-mail:</strong> ${data.client.email || 'Não informado'}</p>
