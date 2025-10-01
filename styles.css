@@ -435,6 +435,72 @@ section h2 {
     gap: 16px;
 }
 
+.service-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.service-category {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.service-category h4 {
+    color: #1e3a8a;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #3b82f6;
+}
+
+.service-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-items label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.2s ease;
+}
+
+.service-items label:hover {
+    color: #1e3a8a;
+}
+
+.service-items input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+}
+
+#technicalResponsible {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.os-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.os-filter {
+    margin-bottom: 24px;
+}
+
 .service-order-card {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -489,6 +555,37 @@ section h2 {
     color: #6b7280;
     font-size: 14px;
     line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.order-services {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 12px 0;
+}
+
+.order-services h5 {
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.order-services-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.service-tag {
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #dbeafe;
 }
 
 .order-actions {
@@ -532,6 +629,11 @@ section h2 {
         grid-template-columns: 1fr;
     }
     
+    .service-categories-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
     .form-actions {
         flex-direction: column;
     }
@@ -542,6 +644,12 @@ section h2 {
     
     .login-container {
         padding: 32px 24px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .service-categories-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -557,5 +665,9 @@ section h2 {
     
     section h2 {
         font-size: 1.3em;
+    }
+    
+    .service-categories-grid {
+        grid-template-columns: 1fr;
     }
 }

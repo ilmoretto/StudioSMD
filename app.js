@@ -1,14 +1,37 @@
 // Inicializar Firebase
 let app, auth, db;
 
-try {
-    app = firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    console.log('✅ Firebase inicializado com sucesso');
-} catch (error) {
-    console.error('❌ Erro ao inicializar Firebase:', error);
-    alert('Erro ao conectar com o Firebase. Verifique o arquivo firebase-config.js');
+// Verificar se o Firebase SDK foi carregado
+if (typeof firebase === 'undefined') {
+    console.error('❌ Firebase SDK não foi carregado');
+    alert('Erro: Firebase SDK não encontrado. Verifique a conexão com a internet.');
+} else if (typeof firebaseConfig === 'undefined') {
+    console.error('❌ Configuração do Firebase não encontrada');
+    alert('Erro: Configuração do Firebase não encontrada. Verifique o arquivo firebase-config.js');
+} else {
+    try {
+        // Verificar se já foi inicializado
+        if (firebase.apps.length === 0) {
+            app = firebase.initializeApp(firebaseConfig);
+        } else {
+            app = firebase.app();
+        }
+        
+        auth = firebase.auth();
+        db = firebase.firestore();
+        
+        console.log('✅ Firebase inicializado com sucesso');
+        console.log('🔑 Projeto:', firebaseConfig.projectId);
+        
+        // Testar conexão
+        auth.onAuthStateChanged(() => {
+            console.log('🔐 Auth listener ativo');
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro ao inicializar Firebase:', error);
+        alert(`Erro ao conectar com o Firebase: ${error.message}`);
+    }
 }
 
 // Gerenciador de Ordens de Serviço com Firebase
@@ -17,7 +40,9 @@ class ServiceOrderManager {
         this.currentUser = null;
         this.selectedClient = null;
         this.clients = [];
+        this.orders = [];
         this.unsubscribeClients = null;
+        this.unsubscribeOrders = null;
         this.init();
     }
 
@@ -25,6 +50,7 @@ class ServiceOrderManager {
         this.setupAuthListener();
         this.setupEventListeners();
         this.setDefaultDate();
+        this.generateNextOrderNumber();
     }
 
     // === AUTENTICAÇÃO ===
@@ -35,6 +61,8 @@ class ServiceOrderManager {
                 this.currentUser = user;
                 this.showApp();
                 this.loadClientsRealtime();
+                this.loadOrdersRealtime();
+                this.generateNextOrderNumber();
             } else {
                 this.currentUser = null;
                 this.showLogin();
@@ -168,6 +196,49 @@ class ServiceOrderManager {
             console.error('Erro ao carregar clientes:', error);
             this.showNotification('Erro ao carregar clientes', 'error');
         });
+    }
+
+    loadOrdersRealtime() {
+        if (!this.currentUser) return;
+
+        const ordersRef = db.collection('users').doc(this.currentUser.uid).collection('orders');
+        
+        this.unsubscribeOrders = ordersRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+            this.orders = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            this.renderOrders();
+        });
+    }
+
+    async generateNextOrderNumber() {
+        if (!this.currentUser) return;
+
+        try {
+            const currentYear = new Date().getFullYear();
+            const ordersRef = db.collection('users').doc(this.currentUser.uid).collection('orders');
+            
+            // Buscar a última OS do ano atual
+            const snapshot = await ordersRef
+                .where('year', '==', currentYear)
+                .orderBy('orderNumber', 'desc')
+                .limit(1)
+                .get();
+            
+            let nextNumber = 1;
+            if (!snapshot.empty) {
+                const lastOrder = snapshot.docs[0].data();
+                nextNumber = (lastOrder.orderNumber || 0) + 1;
+            }
+            
+            const osNumber = `${String(nextNumber).padStart(3, '0')}/${currentYear}`;
+            document.getElementById('osNumber').value = osNumber;
+        } catch (error) {
+            console.error('Erro ao gerar número da OS:', error);
+            const currentYear = new Date().getFullYear();
+            document.getElementById('osNumber').value = `001/${currentYear}`;
+        }
     }
 
     async saveClient(e) {
@@ -316,7 +387,7 @@ class ServiceOrderManager {
         return radio ? radio.value : '';
     }
 
-    generateServiceOrder() {
+    async generateServiceOrder() {
         if (!this.selectedClient) {
             this.showNotification('Selecione um cliente antes de gerar a ordem de serviço', 'error');
             return;
@@ -328,8 +399,15 @@ class ServiceOrderManager {
             return;
         }
 
+        // Extrair número da OS e ano para o auto-incremento
+        const [numberPart, yearPart] = osNumber.split('/');
+        const orderNumber = parseInt(numberPart);
+        const year = parseInt(yearPart);
+
         const orderData = {
             number: osNumber,
+            orderNumber: orderNumber,
+            year: year,
             date: this.formatDate(document.getElementById('osDate').value),
             client: this.selectedClient,
             services: this.getSelectedServices(),
@@ -337,30 +415,56 @@ class ServiceOrderManager {
             executionDate: this.formatDate(document.getElementById('execDate').value),
             executionTime: document.getElementById('execTime').value,
             estimatedTime: this.getEstimatedTime(),
+            technicalResponsible: 'Tassio Pires de Oliveira',
             totalValue: document.getElementById('totalValue').value,
             paymentMethods: this.getPaymentMethods(),
-            paymentDate: this.formatDate(document.getElementById('paymentDate').value)
+            paymentDate: this.formatDate(document.getElementById('paymentDate').value),
+            status: 'pending'
         };
 
-        // Salvar OS no Firebase (opcional)
-        this.saveOrderToFirebase(orderData);
-        
-        this.openPrintPage(orderData);
+        try {
+            // Salvar OS no Firebase
+            await this.saveOrderToFirebase(orderData);
+            
+            // Abrir página de impressão
+            this.openPrintPage(orderData);
+            
+            // Limpar campos e gerar próximo número
+            this.clearOrderForm();
+            await this.generateNextOrderNumber();
+            
+            this.showNotification('Ordem de serviço gerada com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro ao gerar OS:', error);
+            this.showNotification('Erro ao gerar ordem de serviço', 'error');
+        }
     }
 
     async saveOrderToFirebase(orderData) {
         if (!this.currentUser) return;
 
-        try {
-            const ordersRef = db.collection('users').doc(this.currentUser.uid).collection('orders');
-            await ordersRef.add({
-                ...orderData,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            console.log('✅ OS salva no Firebase');
-        } catch (error) {
-            console.error('Erro ao salvar OS:', error);
-        }
+        const ordersRef = db.collection('users').doc(this.currentUser.uid).collection('orders');
+        await ordersRef.add({
+            ...orderData,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+
+    clearOrderForm() {
+        // Limpar apenas os campos que devem ser resetados
+        document.getElementById('serviceDescription').value = '';
+        document.getElementById('execDate').value = '';
+        document.getElementById('execTime').value = '';
+        document.getElementById('totalValue').value = '';
+        document.getElementById('paymentDate').value = '';
+        document.getElementById('outroServico').value = '';
+        
+        // Desmarcar serviços
+        document.querySelectorAll('input[name="service"]:checked').forEach(cb => cb.checked = false);
+        document.querySelectorAll('input[name="estimatedTime"]:checked').forEach(rb => rb.checked = false);
+        document.querySelectorAll('input[name="payment"]:checked').forEach(cb => cb.checked = false);
+        
+        // Manter cliente selecionado e data atual
     }
 
     formatDate(dateString) {
@@ -388,6 +492,10 @@ class ServiceOrderManager {
             ? data.paymentMethods.join(', ')
             : 'Não informado';
 
+        // Data atual para assinatura
+        const today = new Date();
+        const signatureDate = today.toLocaleDateString('pt-BR');
+
         return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -397,33 +505,43 @@ class ServiceOrderManager {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 12pt; line-height: 1.6; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #000; padding-bottom: 20px; }
-        .header h1 { font-size: 24pt; margin-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1e3a8a; padding-bottom: 20px; }
+        .header h1 { font-size: 24pt; margin-bottom: 10px; color: #1e3a8a; }
+        .header .studio-info { font-size: 11pt; color: #555; margin-bottom: 5px; }
+        .header .contact-info { font-size: 10pt; color: #666; }
         .os-info { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
         .section { margin-bottom: 25px; border: 1px solid #ccc; padding: 15px; }
-        .section h2 { font-size: 14pt; margin-bottom: 15px; color: #333; border-bottom: 2px solid #666; padding-bottom: 5px; }
+        .section h2 { font-size: 14pt; margin-bottom: 15px; color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; }
         .client-info p { margin: 8px 0; }
         .services-list { columns: 2; column-gap: 20px; }
         .services-list li { margin-bottom: 8px; break-inside: avoid; }
-        .description { background: #f5f5f5; padding: 10px; margin: 10px 0; min-height: 60px; }
+        .description { background: #f8fafc; padding: 10px; margin: 10px 0; min-height: 60px; border-left: 4px solid #3b82f6; }
         .info-row { display: flex; justify-content: space-between; margin: 10px 0; }
         .info-item { flex: 1; margin-right: 15px; }
-        .observations { background: #fffbf0; padding: 15px; margin: 20px 0; border-left: 4px solid #ff9800; }
-        .observations h3 { margin-bottom: 10px; color: #ff9800; }
+        .observations { background: #fef3c7; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+        .observations h3 { margin-bottom: 10px; color: #92400e; }
         .observations ul { margin-left: 20px; }
         .observations li { margin: 8px 0; }
         .signatures { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; }
         .signature-box { text-align: center; flex: 1; margin: 0 20px; }
         .signature-line { border-top: 2px solid #000; margin-bottom: 8px; padding-top: 5px; }
-        .print-button { position: fixed; top: 20px; right: 20px; padding: 15px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14pt; font-weight: bold; }
+        .signature-date { margin-top: 20px; text-align: center; font-size: 11pt; color: #666; }
+        .print-button { position: fixed; top: 20px; right: 20px; padding: 15px 30px; background: #1e3a8a; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14pt; font-weight: bold; }
         @media print { .print-button { display: none; } body { padding: 20px; } }
     </style>
 </head>
 <body>
-    <button class="print-button" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="print-button" onclick="window.print()">Imprimir</button>
     <div class="header">
         <h1>ORDEM DE SERVIÇO</h1>
-        <p>Estúdio de Áudio - Ouro Preto do Oeste</p>
+        <div class="studio-info">
+            <strong>Studio SMD || Studio Sonata Música e Dança</strong>
+        </div>
+        <div class="contact-info">
+            Praça da Liberdade, 104 - União - Ouro Preto do Oeste - RO - 76.920-000<br>
+            linktr.ee/sonata_md - E-mail: conservatorio86@gmail.com<br>
+            Fone: (69) 99224-6426
+        </div>
     </div>
     <div class="os-info">
         <div>Nº: <span>${data.number}</span></div>
@@ -432,10 +550,11 @@ class ServiceOrderManager {
     <div class="section">
         <h2>Dados do Cliente</h2>
         <div class="client-info">
-            <p><strong>Nome:</strong> ${data.client.name}</p>
-            <p><strong>Telefone:</strong> ${data.client.phone}</p>
-            <p><strong>Endereço:</strong> ${data.client.address || 'Não informado'}</p>
+            <p><strong>Nome Completo:</strong> ${data.client.name}</p>
+            <p><strong>CPF:</strong> ${data.client.cpf || 'Não informado'}</p>
+            <p><strong>RG:</strong> ${data.client.rg || 'Não informado'}</p>
             <p><strong>E-mail:</strong> ${data.client.email || 'Não informado'}</p>
+            <p><strong>Endereço:</strong> ${data.client.address || 'Não informado'}</p>
         </div>
     </div>
     <div class="section">
@@ -476,11 +595,99 @@ class ServiceOrderManager {
         </div>
         <div class="signature-box">
             <div class="signature-line">Responsável Técnico</div>
-            <p>_____________________</p>
+            <p>Tassio Pires de Oliveira</p>
         </div>
+    </div>
+    <div class="signature-date">
+        <p>Ouro Preto do Oeste - RO, ${signatureDate}</p>
     </div>
 </body>
 </html>`;
+    }
+
+    renderOrders() {
+        const container = document.getElementById('osList');
+        
+        if (this.orders.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">Nenhuma ordem de serviço encontrada.</p>';
+            return;
+        }
+
+        container.innerHTML = this.orders.map(order => {
+            const statusClass = order.status === 'completed' ? 'status-completed' : 
+                               order.status === 'progress' ? 'status-progress' : 'status-pending';
+            
+            const statusText = order.status === 'completed' ? 'Concluída' : 
+                              order.status === 'progress' ? 'Em Andamento' : 'Pendente';
+
+            const servicesList = order.services && order.services.length > 0 
+                ? order.services.slice(0, 3).map(service => 
+                    `<span class="service-tag">${service}</span>`
+                  ).join('')
+                : '<span class="service-tag">Nenhum serviço</span>';
+
+            const moreServices = order.services && order.services.length > 3 
+                ? `<span class="service-tag">+${order.services.length - 3} mais</span>` 
+                : '';
+
+            return `
+                <div class="service-order-card">
+                    <div class="order-header">
+                        <div class="order-number">OS #${order.number}</div>
+                        <div class="order-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="order-info">
+                        <strong>Cliente:</strong> ${order.client?.name || 'N/A'}<br>
+                        <strong>Data:</strong> ${order.date || 'N/A'}<br>
+                        <strong>Execução:</strong> ${order.executionDate || 'Não agendada'}<br>
+                        <strong>Responsável:</strong> ${order.technicalResponsible || 'Tassio Pires de Oliveira'}<br>
+                        <strong>Valor:</strong> ${order.totalValue || 'R$ 0,00'}
+                    </div>
+                    <div class="order-services">
+                        <h5>Serviços:</h5>
+                        <div class="order-services-list">
+                            ${servicesList}${moreServices}
+                        </div>
+                    </div>
+                    <div class="order-actions">
+                        <button class="btn btn-primary" onclick="manager.viewOrderDetails('${order.id}')">Ver Detalhes</button>
+                        <button class="btn btn-secondary" onclick="manager.reprintOrder('${order.id}')">Reimprimir</button>
+                        <button class="btn btn-success" onclick="manager.markOrderCompleted('${order.id}')">Marcar Concluída</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async viewOrderDetails(orderId) {
+        const order = this.orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        // Aqui você pode implementar um modal ou página de detalhes
+        alert(`Detalhes da OS #${order.number}\n\nCliente: ${order.client?.name}\nData: ${order.date}\nStatus: ${order.status}`);
+    }
+
+    async reprintOrder(orderId) {
+        const order = this.orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        this.openPrintPage(order);
+    }
+
+    async markOrderCompleted(orderId) {
+        if (!this.currentUser) return;
+
+        try {
+            const orderRef = db.collection('users').doc(this.currentUser.uid).collection('orders').doc(orderId);
+            await orderRef.update({
+                status: 'completed',
+                completedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            this.showNotification('Ordem de serviço marcada como concluída!', 'success');
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            this.showNotification('Erro ao atualizar status da ordem', 'error');
+        }
     }
 
     showNotification(message, type = 'info') {
@@ -501,6 +708,7 @@ class ServiceOrderManager {
 }
 
 // Inicializar o app quando o DOM estiver pronto
+let manager;
 document.addEventListener('DOMContentLoaded', () => {
-    new ServiceOrderManager();
+    manager = new ServiceOrderManager();
 });

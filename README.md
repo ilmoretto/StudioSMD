@@ -1,10 +1,10 @@
 # Gerenciador de Ordens de Serviço - Studio SMD
 
-Sistema de gestão profissional para estúdios de áudio e produção musical, desenvolvido para otimizar o controle de clientes e ordens de serviço.
+Sistema de gestão profissional para o Studio SMD || Studio Sonata Música e Dança, desenvolvido para otimizar o controle de clientes e ordens de serviço.
 
 ## 📋 Sobre o Projeto
 
-O **Studio SMD Manager** é uma aplicação web moderna que permite gerenciar de forma eficiente todas as operações de um estúdio de áudio, desde o cadastro de clientes até a criação e controle de ordens de serviço completas.
+O **Studio SMD Manager** é uma aplicação web moderna que permite gerenciar de forma eficiente todas as operações do Studio Sonata Música e Dança, desde o cadastro de clientes até a criação e controle de ordens de serviço completas.
 
 ### Principais Funcionalidades
 
@@ -128,9 +128,9 @@ Para suporte técnico ou dúvidas sobre o sistema:
 
 ## 📄 Licença
 
-Este projeto é proprietário e destinado ao uso específico do Studio SMD.
+Este projeto é proprietário e destinado ao uso específico do Studio SMD || Studio Sonata Música e Dança.
 
 ---
 
-**Studio SMD Manager** - Gestão profissional para estúdios de áudio
+**Studio SMD Manager** - Gestão profissional para Studio Sonata Música e Dança
 *Desenvolvido com tecnologias modernas para máxima eficiência e confiabilidade*
