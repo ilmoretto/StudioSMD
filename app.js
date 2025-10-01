@@ -57,14 +57,17 @@ class ServiceOrderManager {
     
     setupAuthListener() {
         auth.onAuthStateChanged((user) => {
+            console.log('🔐 Estado de autenticação mudou:', user ? 'Logado' : 'Deslogado');
             if (user) {
                 this.currentUser = user;
+                console.log('👤 Usuário logado:', user.email);
                 this.showApp();
                 this.loadClientsRealtime();
                 this.loadOrdersRealtime();
                 this.generateNextOrderNumber();
             } else {
                 this.currentUser = null;
+                console.log('🚪 Usuário deslogado');
                 this.showLogin();
             }
         });
@@ -78,7 +81,25 @@ class ServiceOrderManager {
     showApp() {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.remove('hidden');
-        document.getElementById('userName').textContent = this.currentUser.displayName || this.currentUser.email;
+        
+        if (this.currentUser) {
+            document.getElementById('userName').textContent = this.currentUser.displayName || this.currentUser.email;
+        }
+        
+        // Teste de conectividade com Firestore
+        this.testFirestoreConnection();
+    }
+
+    async testFirestoreConnection() {
+        try {
+            console.log('🔍 Testando conectividade com Firestore...');
+            const testRef = db.collection('users').doc(this.currentUser.uid);
+            await testRef.get();
+            console.log('✅ Firestore conectado com sucesso');
+        } catch (error) {
+            console.error('❌ Erro de conectividade com Firestore:', error);
+            this.showNotification('Erro de conexão com o banco de dados', 'error');
+        }
     }
 
     setupEventListeners() {
@@ -185,18 +206,24 @@ class ServiceOrderManager {
     // === GERENCIAMENTO DE CLIENTES (FIREBASE) ===
 
     loadClientsRealtime() {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            console.warn('⚠️ Tentativa de carregar clientes sem usuário logado');
+            return;
+        }
 
+        console.log('📂 Carregando clientes em tempo real...');
         const clientsRef = db.collection('users').doc(this.currentUser.uid).collection('clients');
         
         this.unsubscribeClients = clientsRef.orderBy('name').onSnapshot((snapshot) => {
+            console.log('📊 Snapshot de clientes recebido:', snapshot.size, 'documentos');
             this.clients = [];
             snapshot.forEach((doc) => {
                 this.clients.push({ id: doc.id, ...doc.data() });
             });
+            console.log('👥 Clientes carregados:', this.clients.length);
             this.renderClients();
         }, (error) => {
-            console.error('Erro ao carregar clientes:', error);
+            console.error('❌ Erro ao carregar clientes:', error);
             this.showNotification('Erro ao carregar clientes', 'error');
         });
     }
@@ -247,32 +274,56 @@ class ServiceOrderManager {
     async saveClient(e) {
         e.preventDefault();
         
+        console.log('🔄 Tentando salvar cliente...');
+        
         if (!this.currentUser) {
+            console.error('❌ Usuário não logado');
             this.showNotification('Você precisa estar logado', 'error');
             return;
         }
 
+        if (!db) {
+            console.error('❌ Firestore não inicializado');
+            this.showNotification('Erro: Banco de dados não conectado', 'error');
+            return;
+        }
+
+        // Verificar se todos os campos obrigatórios estão preenchidos
+        const name = document.getElementById('clientName').value.trim();
+        const phone = document.getElementById('clientPhone').value.trim();
+        const email = document.getElementById('clientEmail').value.trim();
+        
+        if (!name || !phone || !email) {
+            this.showNotification('Preencha todos os campos obrigatórios', 'error');
+            return;
+        }
+
         const client = {
-            name: document.getElementById('clientName').value,
-            phone: document.getElementById('clientPhone').value,
+            name: name,
+            phone: phone,
             birthDate: document.getElementById('clientBirthDate').value,
-            rg: document.getElementById('clientRG').value,
-            cpf: document.getElementById('clientCPF').value,
-            email: document.getElementById('clientEmail').value,
-            address: document.getElementById('clientAddress').value,
+            rg: document.getElementById('clientRG').value.trim(),
+            cpf: document.getElementById('clientCPF').value.trim(),
+            email: email,
+            address: document.getElementById('clientAddress').value.trim(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
+        console.log('📄 Dados do cliente:', client);
+
         try {
             const clientsRef = db.collection('users').doc(this.currentUser.uid).collection('clients');
+            console.log('📁 Referência da coleção criada');
+            
             const docRef = await clientsRef.add(client);
+            console.log('✅ Cliente salvo com ID:', docRef.id);
             
             this.hideClientForm();
             this.selectClient({ id: docRef.id, ...client });
             this.showNotification('Cliente cadastrado com sucesso!', 'success');
         } catch (error) {
-            console.error('Erro ao salvar cliente:', error);
-            this.showNotification('Erro ao cadastrar cliente', 'error');
+            console.error('❌ Erro ao salvar cliente:', error);
+            this.showNotification(`Erro ao cadastrar cliente: ${error.message}`, 'error');
         }
     }
 
