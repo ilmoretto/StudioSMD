@@ -1,262 +1,136 @@
-# 🎵 Gerenciador de Ordens de Serviço
+# Gerenciador de Ordens de Serviço - Studio SMD
 
-Sistema web para gerenciamento de ordens de serviço de estúdio de áudio com integração Firebase.
+Sistema de gestão profissional para estúdios de áudio e produção musical, desenvolvido para otimizar o controle de clientes e ordens de serviço.
 
-[![Deploy](https://img.shields.io/badge/deploy-GitHub%20Pages-blue)](https://ilmoretto.github.io/gerenciador-ordens-servico/)
-[![Firebase](https://img.shields.io/badge/backend-Firebase-orange)](https://firebase.google.com/)
+## 📋 Sobre o Projeto
 
-## 🌐 Demo Online
+O **Studio SMD Manager** é uma aplicação web moderna que permite gerenciar de forma eficiente todas as operações de um estúdio de áudio, desde o cadastro de clientes até a criação e controle de ordens de serviço completas.
 
-**Acesse:** [https://ilmoretto.github.io/gerenciador-ordens-servico/](https://ilmoretto.github.io/gerenciador-ordens-servico/)
+### Principais Funcionalidades
 
-## 🚀 Funcionalidades
+- **Gestão de Clientes**
+  - Cadastro completo com dados pessoais (Nome, CPF, RG, Data de Nascimento)
+  - Controle de informações de contato (Email, Endereço completo)
+  - Busca e filtros avançados
+  - Interface responsiva e intuitiva
 
-- ✅ **Autenticação de usuários** (E-mail/Senha e Google)
-- ✅ **Cadastro de clientes** sincronizado na nuvem
-- ✅ **Busca de clientes** em tempo real
-- ✅ **Geração de ordens de serviço**
-- ✅ **Página de impressão** profissional
-- ✅ **Sincronização automática** entre dispositivos
-- ✅ **Backup em nuvem** (Firebase Firestore)
-- ✅ **Deploy automático** via GitHub Pages
+- **Ordens de Serviço**
+  - Criação de OS com numeração automática
+  - Categorização de serviços (Pré-produção, Produção, Pós-produção)
+  - Agendamento com profissional responsável
+  - Controle financeiro e formas de pagamento
+  - Geração de documentos para impressão
 
-## 🛠️ Tecnologias
+- **Autenticação e Segurança**
+  - Login seguro com Firebase Authentication
+  - Suporte a login com Google
+  - Dados protegidos por usuário
+  - Sincronização em tempo real
 
-- **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
-- **Backend:** Firebase Authentication & Firestore
-- **Deploy:** GitHub Pages
-- **CI/CD:** GitHub Actions
+## 🚀 Tecnologias Utilizadas
 
-## 📦 Instalação Local
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Firebase (Firestore Database, Authentication)
+- **Hospedagem**: Firebase Hosting / GitHub Pages
+- **Design**: Interface moderna com tons de azul profissional
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/ilmoretto/gerenciador-ordens-servico.git
-cd gerenciador-ordens-servico
-```
-
-### 2. Configure o Firebase
-
-#### 2.1. Criar Projeto Firebase
-1. Acesse [Firebase Console](https://console.firebase.google.com/)
-2. Clique em "Adicionar projeto"
-3. Nome: `gerenciador-ordens-servico`
-4. Clique em "Criar projeto"
-
-#### 2.2. Habilitar Authentication
-1. Menu lateral → **Authentication** → "Começar"
-2. Ative:
-   - ✅ **E-mail/senha**
-   - ✅ **Google** (recomendado)
-
-#### 2.3. Criar Firestore Database
-1. Menu lateral → **Firestore Database** → "Criar banco de dados"
-2. Modo: **Produção**
-3. Localização: `southamerica-east1` (São Paulo)
-
-#### 2.4. Configurar Regras de Segurança
-No Firestore, aba "Regras", cole:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
-
-#### 2.5. Obter Credenciais
-1. ⚙️ Configurações do projeto
-2. Role até "Seus aplicativos"
-3. Clique em `</>` (Web)
-4. Apelido: `gerenciador-os-web`
-5. **Copie as credenciais**
-
-#### 2.6. Configurar Domínio Autorizado
-No Firebase Console:
-1. **Authentication** → **Settings** → **Authorized domains**
-2. Adicione: `ilmoretto.github.io`
-
-### 3. Criar arquivo de configuração
-
-```bash
-cp firebase-config.example.js firebase-config.js
-```
-
-Edite `firebase-config.js` com suas credenciais:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "SUA_API_KEY_AQUI",
-  authDomain: "seu-projeto.firebaseapp.com",
-  projectId: "seu-projeto-id",
-  storageBucket: "seu-projeto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
-};
-```
-
-### 4. Testar localmente
-
-```bash
-# Python 3
-python -m http.server 8000
-
-# Node.js
-npx http-server
-
-# PHP
-php -S localhost:8000
-```
-
-Acesse: `http://localhost:8000`
-
-## 🚢 Deploy no GitHub Pages
-
-### Opção 1: Deploy Automático (Recomendado)
-
-O projeto já está configurado com GitHub Actions. Basta fazer push:
-
-```bash
-git add .
-git commit -m "Configura Firebase e adiciona workflow"
-git push origin main
-```
-
-O deploy acontece automaticamente! ✨
-
-### Opção 2: Habilitar Manualmente
-
-1. Vá em **Settings** do repositório
-2. Menu lateral → **Pages**
-3. **Source:** Deploy from a branch
-4. **Branch:** `main` → `/ (root)` → Save
-
-Aguarde alguns minutos e acesse:
-```
-https://ilmoretto.github.io/gerenciador-ordens-servico/
-```
-
-## ⚠️ IMPORTANTE: Configurar Firebase Config para Produção
-
-### Método 1: Usar GitHub Secrets (Mais Seguro)
-
-1. Crie o arquivo `firebase-config.js` diretamente no repositório com suas credenciais
-2. **Isso é seguro** porque as credenciais do Firebase podem ser expostas no frontend
-3. O Firebase usa regras de segurança no backend para proteger os dados
-
-### Método 2: Criar Branches Separadas (Avançado)
-
-```bash
-# Branch de desenvolvimento (com config local)
-git checkout -b dev
-
-# Branch main (com config de produção)
-git checkout main
-```
-
-## 📖 Como Usar
-
-### 1️⃣ Primeiro Acesso
-- Acesse a aplicação
-- Crie conta ou faça login com Google
-- Seus dados ficam salvos na nuvem
-
-### 2️⃣ Cadastrar Cliente
-1. Clique em **"➕ Novo Cliente"**
-2. Preencha os dados
-3. Clique em **"💾 Salvar Cliente"**
-4. Cliente sincronizado automaticamente ✅
-
-### 3️⃣ Buscar Cliente
-- Use a barra de busca 🔍
-- Clique no cliente para selecioná-lo
-
-### 4️⃣ Gerar Ordem de Serviço
-1. Selecione um cliente
-2. Preencha **Nº da OS** e **Data**
-3. Marque os **serviços** (checkboxes)
-4. Preencha **agenda**, **valores** e **forma de pagamento**
-5. Clique em **"🖨️ Gerar Ordem de Serviço"**
-6. **Imprima** (Ctrl+P) ou **Salve como PDF**
-
-## 🔒 Segurança
-
-✅ **Autenticação obrigatória** - Apenas usuários logados acessam  
-✅ **Dados isolados** - Cada usuário vê apenas seus dados  
-✅ **Regras Firestore** - Proteção no backend  
-✅ **HTTPS** - GitHub Pages usa SSL automaticamente  
-✅ **Sem API Keys secretas** - Firebase usa regras de segurança  
-
-## 📁 Estrutura do Projeto
+## 📦 Estrutura do Projeto
 
 ```
-gerenciador-ordens-servico/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml          # GitHub Actions (deploy automático)
-├── index.html                  # Página principal
-├── styles.css                  # Estilos da aplicação
-├── app.js                      # Lógica JavaScript + Firebase
-├── firebase-config.js          # Credenciais Firebase (criar)
-├── firebase-config.example.js  # Exemplo de configuração
-├── .gitignore                  # Arquivos ignorados
-├── FIREBASE_SETUP.md          # Guia de configuração Firebase
-└── README.md                   # Esta documentação
+OSManager/
+├── index.html              # Página principal da aplicação
+├── app.js                  # Lógica principal e integração Firebase
+├── styles.css              # Estilos e design responsivo
+├── firebase-config.js      # Configurações do Firebase (local)
+├── firebase-config.example.js # Exemplo de configuração
+└── .github/
+    └── workflows/
+        └── deploy.yml      # CI/CD para GitHub Pages
 ```
 
-## 🐛 Troubleshooting
+## ⚙️ Configuração e Instalação
 
-### Erro: "Firebase not defined"
-**Solução:** Verifique se o arquivo `firebase-config.js` existe e está configurado corretamente.
+### Pré-requisitos
 
-### Erro: "Permission denied" no Firestore
-**Solução:** Verifique as regras de segurança do Firestore e se o usuário está autenticado.
+- Conta no [Firebase Console](https://console.firebase.google.com/)
+- Servidor web local (Python, Node.js, ou similar)
 
-### Login com Google não funciona
-**Solução:** Adicione `ilmoretto.github.io` aos domínios autorizados no Firebase Console.
+### Passos para Configuração
 
-### Página em branco após deploy
-**Solução:** Abra o Console do navegador (F12) e verifique erros. Geralmente é problema de configuração do Firebase.
+1. **Clone o repositório**
+   ```bash
+   git clone https://github.com/ilmoretto/StudioSMD.git
+   cd StudioSMD
+   ```
 
-## 🆕 Próximas Funcionalidades
+2. **Configure o Firebase**
+   - Crie um novo projeto no Firebase Console
+   - Ative Authentication (Email/Password e Google)
+   - Ative Firestore Database
+   - Copie as credenciais para `firebase-config.js`
 
-- [ ] Histórico de ordens de serviço
-- [ ] Relatórios financeiros
-- [ ] Exportação para PDF automática
-- [ ] Envio de OS por e-mail
-- [ ] Agendamento de serviços com calendário
-- [ ] Dashboard com métricas
-- [ ] Modo offline (PWA)
-- [ ] Temas claro/escuro
+3. **Execute localmente**
+   ```bash
+   # Python
+   python -m http.server 8000
+   
+   # Node.js
+   npx http-server
+   
+   # PHP
+   php -S localhost:8000
+   ```
 
-## 🤝 Contribuindo
+4. **Acesse a aplicação**
+   - Abra http://localhost:8000 no navegador
+   - Crie uma conta ou faça login
+   - Comece a gerenciar seus clientes e ordens de serviço
 
-Contribuições são bem-vindas! Para contribuir:
+## 🎯 Como Usar
 
-1. Fork este repositório
-2. Crie uma branch: `git checkout -b feature/nova-funcionalidade`
-3. Commit suas mudanças: `git commit -m 'Adiciona nova funcionalidade'`
-4. Push para a branch: `git push origin feature/nova-funcionalidade`
-5. Abra um Pull Request
+### Primeiro Acesso
+1. Acesse a aplicação e crie uma conta
+2. Faça login com suas credenciais
+3. Cadastre seus primeiros clientes
+4. Crie ordens de serviço associadas aos clientes
 
-## 📝 Licença
+### Gerenciamento de Clientes
+- Use o botão "Novo Cliente" para cadastrar
+- Preencha todos os campos obrigatórios
+- Use a busca para encontrar clientes rapidamente
+- Clique em um cliente para selecioná-lo para uma OS
 
-MIT License - veja [LICENSE](LICENSE) para detalhes.
+### Criação de Ordens de Serviço
+- Selecione um cliente cadastrado
+- Escolha os serviços desejados nas categorias
+- Defina datas, valores e forma de pagamento
+- Gere a OS para impressão
 
-## 👤 Autor
+## 🛡️ Segurança
 
-**ilmoretto**
-- GitHub: [@ilmoretto](https://github.com/ilmoretto)
-- Projeto: [gerenciador-ordens-servico](https://github.com/ilmoretto/gerenciador-ordens-servico)
+- Todas as informações são criptografadas pelo Firebase
+- Cada usuário acessa apenas seus próprios dados
+- Autenticação robusta com suporte a 2FA (Google)
+- Backup automático em nuvem
 
-## 🌟 Apoie o Projeto
+## 🌐 Deploy
 
-Se este projeto foi útil para você, considere dar uma ⭐ no repositório!
+O projeto está configurado para deploy automático no GitHub Pages através de GitHub Actions. A cada push na branch main, a aplicação é automaticamente atualizada.
+
+### URL de Produção
+- **GitHub Pages**: https://ilmoretto.github.io/StudioSMD/
+
+## 📞 Suporte
+
+Para suporte técnico ou dúvidas sobre o sistema:
+- Abra uma [issue no GitHub](https://github.com/ilmoretto/StudioSMD/issues)
+- Entre em contato através do repositório
+
+## 📄 Licença
+
+Este projeto é proprietário e destinado ao uso específico do Studio SMD.
 
 ---
 
-**Desenvolvido com ❤️ para estúdios de áudio**
+**Studio SMD Manager** - Gestão profissional para estúdios de áudio
+*Desenvolvido com tecnologias modernas para máxima eficiência e confiabilidade*

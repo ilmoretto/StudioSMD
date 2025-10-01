@@ -180,9 +180,11 @@ class ServiceOrderManager {
 
         const client = {
             name: document.getElementById('clientName').value,
-            phone: document.getElementById('clientPhone').value,
-            address: document.getElementById('clientAddress').value,
+            birthDate: document.getElementById('clientBirthDate').value,
+            rg: document.getElementById('clientRG').value,
+            cpf: document.getElementById('clientCPF').value,
             email: document.getElementById('clientEmail').value,
+            address: document.getElementById('clientAddress').value,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -225,15 +227,18 @@ class ServiceOrderManager {
         }
 
         container.innerHTML = clientsToRender.map(client => `
-            <div class="client-item ${this.selectedClient?.id === client.id ? 'selected' : ''}" 
+            <div class="client-card ${this.selectedClient?.id === client.id ? 'selected' : ''}" 
                  data-id="${client.id}">
-                <h4>${client.name}</h4>
-                <p>📞 ${client.phone}</p>
-                <p>📧 ${client.email || 'Não informado'}</p>
+                <div class="client-name">${client.name}</div>
+                <div class="client-info">
+                    <div>CPF: ${client.cpf || 'Não informado'}</div>
+                    <div>Email: ${client.email || 'Não informado'}</div>
+                    <div>RG: ${client.rg || 'Não informado'}</div>
+                </div>
             </div>
         `).join('');
 
-        container.querySelectorAll('.client-item').forEach(item => {
+        container.querySelectorAll('.client-card').forEach(item => {
             item.addEventListener('click', () => {
                 const clientId = item.dataset.id;
                 const client = this.clients.find(c => c.id === clientId);
@@ -261,12 +266,18 @@ class ServiceOrderManager {
         }
 
         container.classList.remove('empty');
+        const birthDate = this.selectedClient.birthDate ? new Date(this.selectedClient.birthDate).toLocaleDateString('pt-BR') : 'Não informado';
+        
         container.innerHTML = `
             <h3>Cliente Selecionado</h3>
-            <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
-            <p><strong>Telefone:</strong> ${this.selectedClient.phone}</p>
-            <p><strong>Endereço:</strong> ${this.selectedClient.address || 'Não informado'}</p>
-            <p><strong>E-mail:</strong> ${this.selectedClient.email || 'Não informado'}</p>
+            <div class="client-details">
+                <p><strong>Nome:</strong> ${this.selectedClient.name}</p>
+                <p><strong>Data de Nascimento:</strong> ${birthDate}</p>
+                <p><strong>RG:</strong> ${this.selectedClient.rg || 'Não informado'}</p>
+                <p><strong>CPF:</strong> ${this.selectedClient.cpf || 'Não informado'}</p>
+                <p><strong>E-mail:</strong> ${this.selectedClient.email || 'Não informado'}</p>
+                <p><strong>Endereço:</strong> ${this.selectedClient.address || 'Não informado'}</p>
+            </div>
         `;
     }
 
