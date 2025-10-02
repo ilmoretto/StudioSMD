@@ -2,6 +2,14 @@
 # Descomente a linha abaixo se quiser manter as credenciais locais apenas
 # firebase-config.js
 
+# Ambiente de Homologação Local (não committar)
+homolog/
+*-homolog.*
+homologacao.*
+HOMOLOG*
+test-local/
+staging-local/
+
 # Node modules (se adicionar ferramentas de build)
 node_modules/
 package-lock.json
