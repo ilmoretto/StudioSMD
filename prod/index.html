@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studio - Gerenciador de OS</title>
+    <link rel="stylesheet" href="./css/styles-modern.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Modal de Confirmação de Logout -->
+    <div id="logoutModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirmar Logout</h3>
+            <p>Tem certeza que deseja sair do sistema?</p>
+            <div class="modal-buttons">
+                <button id="confirmLogout" class="btn btn-danger">Sim, Sair</button>
+                <button id="cancelLogout" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login (moderno) -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <h1>Gerenciador de OS</h1>
+            <p>Studio SMD</p>
+
+            <div class="login-form">
+                <h2>Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">E-mail:</label>
+                        <input type="email" id="loginEmail" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Senha:</label>
+                        <input type="password" id="loginPassword" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Primeiro acesso? <a href="#" id="showRegister">Definir primeira senha</a></p>
+                </div>
+            </div>
+
+            <!-- Primeira Definição de Senha -->
+            <div class="login-form hidden" id="registerForm">
+                <h2>Primeira Definição de Senha</h2>
+                <p class="register-info">Bem-vindo! Defina sua senha para acessar o sistema.</p>
+                <form id="registerFormSubmit">
+                    <div class="form-group">
+                        <label for="registerEmail">E-mail:</label>
+                        <input type="email" id="registerEmail" placeholder="Digite seu e-mail pré-cadastrado" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Senha:</label>
+                        <input type="password" id="registerPassword" minlength="12" required />
+                        <div class="password-requirements">
+                            <h4>Requisitos de Segurança:</h4>
+                            <ul id="passwordChecklist">
+                                <li class="password-requirement" data-requirement="length">Mínimo 12 caracteres</li>
+                                <li class="password-requirement" data-requirement="uppercase">Pelo menos 1 letra maiúscula</li>
+                                <li class="password-requirement" data-requirement="lowercase">Pelo menos 1 letra minúscula</li>
+                                <li class="password-requirement" data-requirement="number">Pelo menos 1 número</li>
+                                <li class="password-requirement" data-requirement="special">Pelo menos 1 caractere especial (!@#$%^&*)</li>
+                            </ul>
+                            <div class="password-strength">
+                                <div class="password-strength-bar" id="strengthBar"></div>
+                            </div>
+                            <small id="strengthText">Força da senha: Muito fraca</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Senha:</label>
+                        <input type="password" id="confirmPassword" minlength="12" required />
+                        <small id="confirmMessage"></small>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Definir Senha</button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Já tem senha definida? <a href="#" id="showLogin">Fazer login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Principal (moderno) -->
+    <div id="appScreen" class="app-screen hidden">
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 class="app-title"><i class="fas fa-tools"></i> Studio SMD</h1>
+                <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="topbar-right">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Usuário</span>
+                    <span class="user-role" id="userRole">Carregando...</span>
+                </div>
+                <button id="btnLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-item has-submenu open" data-target="orders-submenu">
+                        <i class="fas fa-clipboard-list"></i><span>Ordens de Serviço</span><i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu open" id="orders-submenu">
+                        <a href="#" class="nav-link" data-view="new-order"><i class="fas fa-plus"></i> Nova Ordem</a>
+                        <a href="#" class="nav-link" data-view="orders-list"><i class="fas fa-list"></i> Visualizar Ordens</a>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-item has-submenu open" data-target="clients-submenu">
+                        <i class="fas fa-users"></i><span>Clientes</span><i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu open" id="clients-submenu">
+                        <a href="#" class="nav-link" data-view="new-client"><i class="fas fa-user-plus"></i> Novo Cliente</a>
+                        <a href="#" class="nav-link" data-view="clients-list"><i class="fas fa-users"></i> Visualizar Clientes</a>
+                    </div>
+                </div>
+                <div class="nav-section admin-only" id="adminSection">
+                    <div class="nav-item has-submenu" data-target="admin-submenu">
+                        <i class="fas fa-cog"></i><span>Gestão</span><i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu" id="admin-submenu">
+                        <a href="#" class="nav-link" data-view="users-management"><i class="fas fa-users-cog"></i> Usuários</a>
+                        <a href="#" class="nav-link" data-view="audit-logs"><i class="fas fa-history"></i> Logs de Auditoria</a>
+                        <a href="#" class="nav-link" data-view="system-config"><i class="fas fa-sliders-h"></i> Configurações</a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+        <main class="main-content" id="mainContent">
+            <div class="view active" id="dashboard-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                    <p>Bem-vindo ao sistema de gestão de ordens de serviço</p>
+                </div>
+                <div class="dashboard-cards">
+                    <div class="card"><div class="card-icon"><i class="fas fa-clipboard-list"></i></div><div class="card-content"><h3 id="totalOrders">0</h3><p>Total de Ordens</p></div></div>
+                    <div class="card"><div class="card-icon"><i class="fas fa-calendar"></i></div><div class="card-content"><h3 id="thisMonth">0</h3><p>Ordens no Mês</p></div></div>
+                    <div class="card"><div class="card-icon"><i class="fas fa-tasks"></i></div><div class="card-content"><h3 id="activeOrders">0</h3><p>Ordens Ativas</p></div></div>
+                    <div class="card"><div class="card-icon"><i class="fas fa-users"></i></div><div class="card-content"><h3 id="totalClients">0</h3><p>Clientes Cadastrados</p></div></div>
+                </div>
+                <div class="recent-activity">
+                    <h2><i class="fas fa-clock"></i> Atividade Recente</h2>
+                    <div class="activity-list" id="recentActivity"><p class="no-data">Carregando atividades...</p></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Visualização de OS -->
+    <div id="orderViewModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Ordem de Serviço</h3>
+            <div id="orderViewBody" style="margin-top:10px"></div>
+            <div class="modal-buttons" style="margin-top:16px">
+                <button id="orderViewPrint" class="btn btn-primary"><i class="fas fa-print"></i> Imprimir</button>
+                <button id="orderViewClose" class="btn btn-secondary">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+    <!-- Config Firebase (produção) -->
+    <script src="./config/firebase-config.js"></script>
+    <!-- App moderno -->
+    <script src="./js/app-modern.js"></script>
+
+    <!-- Verificação de carregamento -->
+    <script>
+        window.addEventListener('load', function () {
+            if (typeof firebase === 'undefined') {
+                console.error('Firebase SDK não carregou');
+                document.body.innerHTML += '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;text-align:center;z-index:9999;">❌ Erro: Firebase SDK não carregou. Verifique sua conexão com a internet.</div>';
+            } else if (typeof firebaseConfig === 'undefined') {
+                console.error('Firebase config não carregou');
+                document.body.innerHTML += '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;text-align:center;z-index:9999;">❌ Erro: Configuração Firebase não encontrada.</div>';
+            } else {
+                console.log('✅ Produção (moderna) carregada corretamente');
+            }
+        });
+    </script>
+</body>
+</html>

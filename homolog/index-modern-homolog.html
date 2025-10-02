@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSManager - Sistema de Gestão</title>
+    <link rel="stylesheet" href="styles-modern-homolog.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Banner de Homologação -->
+    <div class="homolog-banner">
+        🔧 AMBIENTE DE HOMOLOGAÇÃO - NÃO É PRODUÇÃO 🔧
+    </div>
+    
+    <!-- Modal de Confirmação de Logout -->
+    <div id="logoutModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirmar Logout</h3>
+            <p>Tem certeza que deseja sair do sistema?</p>
+            <div class="modal-buttons">
+                <button id="confirmLogout" class="btn btn-danger">Sim, Sair</button>
+                <button id="cancelLogout" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1><i class="fas fa-tools"></i> OSManager</h1>
+                <p>Sistema de Gestão de Ordens de Serviço</p>
+                <small>Studio SMD || Studio Sonata Música e Dança</small>
+            </div>
+            
+            <div class="login-form">
+                <h2><i class="fas fa-sign-in-alt"></i> Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail"><i class="fas fa-envelope"></i> E-mail:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword"><i class="fas fa-lock"></i> Senha:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> Entrar
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <p>Primeiro acesso? <a href="#" id="showRegister"><i class="fas fa-key"></i> Definir primeira senha</a></p>
+                </div>
+            </div>
+            
+            <!-- Primeira Definição de Senha -->
+            <div class="login-form hidden" id="registerForm">
+                <h2><i class="fas fa-key"></i> Primeira Definição de Senha</h2>
+                <p class="register-info">Bem-vindo! Defina sua senha para acessar o sistema.</p>
+                <form id="registerFormSubmit">
+                    <div class="form-group">
+                        <label for="registerEmail"><i class="fas fa-envelope"></i> E-mail:</label>
+                        <input type="email" id="registerEmail" placeholder="Digite seu e-mail pré-cadastrado" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword"><i class="fas fa-lock"></i> Senha:</label>
+                        <input type="password" id="registerPassword" minlength="12" required>
+                        <div class="password-requirements">
+                            <h4>Requisitos de Segurança:</h4>
+                            <ul id="passwordChecklist">
+                                <li class="password-requirement" data-requirement="length">
+                                    <i class="fas fa-times text-danger"></i> Mínimo 12 caracteres
+                                </li>
+                                <li class="password-requirement" data-requirement="uppercase">
+                                    <i class="fas fa-times text-danger"></i> Pelo menos 1 letra maiúscula
+                                </li>
+                                <li class="password-requirement" data-requirement="lowercase">
+                                    <i class="fas fa-times text-danger"></i> Pelo menos 1 letra minúscula
+                                </li>
+                                <li class="password-requirement" data-requirement="number">
+                                    <i class="fas fa-times text-danger"></i> Pelo menos 1 número
+                                </li>
+                                <li class="password-requirement" data-requirement="special">
+                                    <i class="fas fa-times text-danger"></i> Pelo menos 1 caractere especial
+                                </li>
+                            </ul>
+                            <div class="password-strength">
+                                <div class="password-strength-bar"></div>
+                                <small class="password-strength-text">Força da senha: Muito fraca</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword"><i class="fas fa-check-double"></i> Confirmar Senha:</label>
+                        <input type="password" id="confirmPassword" minlength="12" required>
+                        <div class="confirm-password-error" style="display: none;"></div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-check"></i> Definir Senha
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <p>Já tem conta? <a href="#" id="showLogin"><i class="fas fa-sign-in-alt"></i> Fazer login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Screen -->
+    <div id="appScreen" class="app-screen hidden">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button id="sidebarToggle" class="sidebar-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="app-title">
+                    <i class="fas fa-tools"></i> OSManager
+                </h1>
+            </div>
+            
+            <div class="topbar-right">
+                <div class="user-info">
+                    <span class="user-name" id="userName">Usuário</span>
+                    <span class="user-role" id="userRole">Carregando...</span>
+                </div>
+                <button id="btnLogout" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <!-- Ordens de Serviço -->
+                <div class="nav-section">
+                    <div class="nav-item has-submenu" data-target="orders-submenu">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Ordens de Serviço</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu" id="orders-submenu">
+                        <a href="#" class="nav-link" data-view="new-order">
+                            <i class="fas fa-plus"></i> Nova Ordem
+                        </a>
+                        <a href="#" class="nav-link" data-view="orders-list">
+                            <i class="fas fa-list"></i> Visualizar Ordens
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Clientes -->
+                <div class="nav-section">
+                    <div class="nav-item has-submenu" data-target="clients-submenu">
+                        <i class="fas fa-users"></i>
+                        <span>Clientes</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu" id="clients-submenu">
+                        <a href="#" class="nav-link" data-view="new-client">
+                            <i class="fas fa-user-plus"></i> Novo Cliente
+                        </a>
+                        <a href="#" class="nav-link" data-view="clients-list">
+                            <i class="fas fa-users"></i> Visualizar Clientes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Gestão (Apenas Admin) -->
+                <div class="nav-section admin-only" id="adminSection">
+                    <div class="nav-item has-submenu" data-target="admin-submenu">
+                        <i class="fas fa-cog"></i>
+                        <span>Gestão</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="submenu" id="admin-submenu">
+                        <a href="#" class="nav-link" data-view="users-management">
+                            <i class="fas fa-users-cog"></i> Usuários
+                        </a>
+                        <a href="#" class="nav-link" data-view="audit-logs">
+                            <i class="fas fa-history"></i> Logs de Auditoria
+                        </a>
+                        <a href="#" class="nav-link" data-view="system-config">
+                            <i class="fas fa-sliders-h"></i> Configurações
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Dashboard View (Default) -->
+            <div class="view active" id="dashboard-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                    <p>Bem-vindo ao sistema de gestão de ordens de serviço</p>
+                </div>
+
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="totalOrders">0</h3>
+                            <p>Ordens de Serviço</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="totalClients">0</h3>
+                            <p>Clientes Cadastrados</p>
+                        </div>
+                    </div>
+
+                    <div class="card admin-only">
+                        <div class="card-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Usuários do Sistema</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="thisMonth">0</h3>
+                            <p>Ordens Este Mês</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2><i class="fas fa-clock"></i> Atividade Recente</h2>
+                    <div class="activity-list" id="recentActivity">
+                        <p class="no-data">Carregando atividades...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nova Ordem View -->
+            <div class="view" id="new-order-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-plus"></i> Nova Ordem de Serviço</h1>
+                    <p>Crie uma nova ordem de serviço</p>
+                </div>
+
+                <div class="form-container">
+                    <form id="newOrderForm">
+                        <!-- Cliente Section -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-user"></i> Cliente</h3>
+                            
+                            <div class="client-selector">
+                                <div class="form-group">
+                                    <label>Selecionar Cliente:</label>
+                                    <div class="client-search-container">
+                                        <input type="text" id="clientSearch" placeholder="Digite o nome ou email do cliente...">
+                                        <button type="button" id="searchClientBtn" class="btn btn-secondary">
+                                            <i class="fas fa-search"></i> Buscar
+                                        </button>
+                                        <button type="button" id="newClientBtn" class="btn btn-success">
+                                            <i class="fas fa-plus"></i> Novo Cliente
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="clientSearchResults" class="search-results hidden">
+                                    <!-- Resultados da busca aparecerão aqui -->
+                                </div>
+
+                                <div id="selectedClient" class="selected-client hidden">
+                                    <!-- Cliente selecionado aparecerá aqui -->
+                                </div>
+
+                                <!-- Formulário de Novo Cliente (hidden por padrão) -->
+                                <div id="newClientForm" class="new-client-form hidden">
+                                    <h4><i class="fas fa-user-plus"></i> Cadastrar Novo Cliente</h4>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="newClientName">Nome Completo:</label>
+                                            <input type="text" id="newClientName" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="newClientEmail">E-mail:</label>
+                                            <input type="email" id="newClientEmail" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="newClientPhone">Telefone:</label>
+                                            <input type="tel" id="newClientPhone" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="newClientAddress">Endereço:</label>
+                                            <input type="text" id="newClientAddress">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="button" id="saveNewClient" class="btn btn-success">
+                                            <i class="fas fa-save"></i> Salvar Cliente
+                                        </button>
+                                        <button type="button" id="cancelNewClient" class="btn btn-secondary">
+                                            <i class="fas fa-times"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Serviços Section -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-tasks"></i> Detalhamento do Serviço</h3>
+                            
+                            <div class="service-categories-grid">
+                                <div class="service-category">
+                                    <h4>Pré-produção</h4>
+                                    <div class="service-items">
+                                        <label><input type="checkbox" name="service" value="Pré-produção: Planejamento"> Planejamento</label>
+                                        <label><input type="checkbox" name="service" value="Pré-produção: Testes"> Testes</label>
+                                        <label><input type="checkbox" name="service" value="Pré-produção: Ensaio"> Ensaio</label>
+                                        <label><input type="checkbox" name="service" value="Pré-produção: Partitura"> Partitura</label>
+                                        <label><input type="checkbox" name="service" value="Pré-produção: Arranjo"> Arranjo</label>
+                                    </div>
+                                </div>
+
+                                <div class="service-category">
+                                    <h4>Produção</h4>
+                                    <div class="service-items">
+                                        <label><input type="checkbox" name="service" value="Produção: Gravação"> Gravação</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Masterização"> Masterização</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Edição"> Edição</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Mixagem"> Mixagem</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Captação ao vivo"> Captação ao vivo</label>
+                                        <label><input type="checkbox" name="service" value="Produção: VS/Playback/Trilha de apoio"> VS / Playback / Trilha de apoio</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Podcast/Audiobook"> Podcast / Audiobook</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Reamping"> Reamping</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Sound Design/Efeitos Sonoros"> Sound Design / Efeitos Sonoros</label>
+                                        <label><input type="checkbox" name="service" value="Produção: Trilha Sonora/Música Original"> Trilha Sonora / Música Original</label>
+                                    </div>
+                                </div>
+
+                                <div class="service-category">
+                                    <h4>Pós-produção</h4>
+                                    <div class="service-items">
+                                        <label><input type="checkbox" name="service" value="Pós-produção: Filmagem de estúdio/making of"> Filmagem de estúdio / making of</label>
+                                        <label><input type="checkbox" name="service" value="Pós-produção: Fotografia de estúdio"> Fotografia de estúdio</label>
+                                        <label><input type="checkbox" name="service" value="Pós-produção: Vídeos conceituais"> Vídeos conceituais (animações ou takes abstratos)</label>
+                                        <label><input type="checkbox" name="service" value="Pós-produção: Distribuição em Plataformas Streaming"> Distribuição em Plataformas Streaming</label>
+                                        <label><input type="checkbox" name="service" value="Pós-produção: Personalização de perfil"> Personalização de perfil</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="outroServico">Outros serviços:</label>
+                                <input type="text" id="outroServico" placeholder="Especifique outros serviços...">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="serviceDescription">Descrição detalhada do serviço:</label>
+                                <textarea id="serviceDescription" rows="4" placeholder="Descreva detalhadamente os serviços..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Agenda Section -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-calendar"></i> Agenda e Profissional Responsável</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="execDate">Data da Execução:</label>
+                                    <input type="date" id="execDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="execTime">Horário:</label>
+                                    <input type="time" id="execTime">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="technicalResponsible">Responsável Técnico:</label>
+                                <input type="text" id="technicalResponsible" value="Tassio Pires de Oliveira" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Tempo Estimado:</label>
+                                <div class="time-options">
+                                    <label><input type="radio" name="estimatedTime" value="30 minutos"> 30 minutos</label>
+                                    <label><input type="radio" name="estimatedTime" value="50 minutos"> 50 minutos</label>
+                                    <label><input type="radio" name="estimatedTime" value="1 hora"> 1 hora</label>
+                                    <label><input type="radio" name="estimatedTime" value="1h30min"> 1h30min</label>
+                                    <label><input type="radio" name="estimatedTime" value="2 horas"> 2 horas</label>
+                                    <label><input type="radio" name="estimatedTime" value="2h30min"> 2h30min</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Condições e Valores Section -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-money-bill"></i> Condições e Valores</h3>
+                            
+                            <div class="form-group">
+                                <label for="totalValue">Valor total do serviço:</label>
+                                <input type="text" id="totalValue" placeholder="R$ 0,00">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Forma de pagamento:</label>
+                                <div class="payment-options">
+                                    <label><input type="checkbox" name="payment" value="Pix"> Pix</label>
+                                    <label><input type="checkbox" name="payment" value="Cartão"> Cartão</label>
+                                    <label><input type="checkbox" name="payment" value="Dinheiro"> Dinheiro</label>
+                                    <label><input type="checkbox" name="payment" value="Boleto"> Boleto</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="paymentDate">Pagamento efetuado em:</label>
+                                <input type="date" id="paymentDate">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Gerar Ordem de Serviço
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Limpar Formulário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Ordens View -->
+            <div class="view" id="orders-list-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-list"></i> Ordens de Serviço</h1>
+                    <p>Visualize e gerencie as ordens de serviço</p>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-filters">
+                        <div class="filter-group">
+                            <input type="text" id="orderSearchFilter" placeholder="Buscar por cliente, descrição...">
+                            <select id="statusFilter">
+                                <option value="">Todos os Status</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="em-andamento">Em Andamento</option>
+                                <option value="concluida">Concluída</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                            <button id="clearFilters" class="btn btn-secondary">
+                                <i class="fas fa-filter"></i> Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="ordersTable">
+                            <thead>
+                                <tr>
+                                    <th>OS #</th>
+                                    <th>Cliente</th>
+                                    <th>Descrição</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <tr>
+                                    <td colspan="7" class="no-data">Carregando ordens de serviço...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Novo Cliente View -->
+            <div class="view" id="new-client-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-user-plus"></i> Novo Cliente</h1>
+                    <p>Cadastre um novo cliente no sistema</p>
+                </div>
+
+                <div class="form-container">
+                    <form id="newClientFormView">
+                        <div class="form-section">
+                            <h3><i class="fas fa-user"></i> Dados do Cliente</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="clientName">Nome Completo:</label>
+                                    <input type="text" id="clientName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="clientEmail">E-mail:</label>
+                                    <input type="email" id="clientEmail" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="clientPhone">Telefone:</label>
+                                    <input type="tel" id="clientPhone" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="clientDocument">CPF/CNPJ:</label>
+                                    <input type="text" id="clientDocument">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clientAddress">Endereço Completo:</label>
+                                <textarea id="clientAddress" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="clientNotes">Observações:</label>
+                                <textarea id="clientNotes" rows="2" placeholder="Informações adicionais sobre o cliente..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar Cliente
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Limpar Formulário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Lista de Clientes View -->
+            <div class="view" id="clients-list-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-users"></i> Clientes</h1>
+                    <p>Visualize e gerencie os clientes cadastrados</p>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-filters">
+                        <div class="filter-group">
+                            <input type="text" id="clientSearchFilter" placeholder="Buscar por nome, email, telefone...">
+                            <button id="clearClientFilters" class="btn btn-secondary">
+                                <i class="fas fa-filter"></i> Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="clientsTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Último Contato</th>
+                                    <th>Total OS</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientsTableBody">
+                                <tr>
+                                    <td colspan="6" class="no-data">Carregando clientes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestão de Usuários View (Admin Only) -->
+            <div class="view admin-only" id="users-management-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-users-cog"></i> Gestão de Usuários</h1>
+                    <p>Gerencie usuários do sistema</p>
+                </div>
+
+                <div class="form-container">
+                    <div class="form-section">
+                        <h3><i class="fas fa-user-plus"></i> Pré-cadastrar Novo Usuário</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="preRegisterName">Nome Completo:</label>
+                                <input type="text" id="preRegisterName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="preRegisterEmail">E-mail:</label>
+                                <input type="email" id="preRegisterEmail" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="preRegisterPhone">Telefone:</label>
+                                <input type="tel" id="preRegisterPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="preRegisterRole">Nível de Acesso:</label>
+                                <select id="preRegisterRole" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="user">Usuário Comum</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="btnPreRegister" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Pré-cadastrar Usuário
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3><i class="fas fa-users"></i> Usuários do Sistema</h3>
+                    
+                    <div class="table-wrapper">
+                        <table class="data-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Nível</th>
+                                    <th>Status</th>
+                                    <th>Cadastrado em</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="7" class="no-data">Carregando usuários...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs de Auditoria View (Admin Only) -->
+            <div class="view admin-only" id="audit-logs-view">
+                <div class="page-header">
+                    <h1><i class="fas fa-history"></i> Logs de Auditoria</h1>
+                    <p>Visualize a atividade do sistema</p>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-filters">
+                        <div class="filter-group">
+                            <select id="logTypeFilter">
+                                <option value="">Todos os Tipos</option>
+                                <option value="LOGIN">Login</option>
+                                <option value="LOGOUT">Logout</option>
+                                <option value="CREATE">Criação</option>
+                                <option value="UPDATE">Atualização</option>
+                                <option value="DELETE">Exclusão</option>
+                                <option value="SECURITY">Segurança</option>
+                            </select>
+                            <input type="date" id="logDateFilter">
+                            <button id="clearLogFilters" class="btn btn-secondary">
+                                <i class="fas fa-filter"></i> Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Usuário</th>
+                                    <th>Ação</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <tr>
+                                    <td colspan="5" class="no-data">Carregando logs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <!-- Configurações Firebase -->
+    <script src="firebase-config-homolog.js"></script>
+    
+    <!-- App principal -->
+    <script src="app-modern-homolog.js"></script>
+</body>
+</html>
