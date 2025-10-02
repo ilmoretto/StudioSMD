@@ -38,15 +38,36 @@ O **Studio SMD Manager** é uma aplicação web moderna que permite gerenciar de
 
 ```
 OSManager/
-├── index.html              # Página principal da aplicação
-├── app.js                  # Lógica principal e integração Firebase
-├── styles.css              # Estilos e design responsivo
-├── firebase-config.js      # Configurações do Firebase (local)
-├── firebase-config.example.js # Exemplo de configuração
-└── .github/
-    └── workflows/
-        └── deploy.yml      # CI/CD para GitHub Pages
+├── 📁 src/                    # Código fonte organizado
+│   ├── 📁 js/                 # Lógica da aplicação
+│   │   ├── app.js            # Código principal
+│   │   └── app-info.js       # Documentação do código
+│   ├── 📁 css/               # Estilos e design
+│   │   ├── styles.css        # Estilos principais
+│   │   ├── variables.css     # Variáveis CSS globais
+│   │   └── styles-backup.css # Backup dos estilos
+│   └── 📁 config/            # Configurações
+│       ├── firebase-config.js        # Config Firebase
+│       └── firebase-config.example.js # Template config
+├── 📁 assets/                # Recursos estáticos
+│   └── 📁 images/            # Imagens e ícones
+├── 📁 docs/                  # Documentação técnica
+│   ├── ESTRUTURA.md          # Documentação da estrutura
+│   └── DESENVOLVIMENTO.md    # Guia de desenvolvimento
+├── 📁 .github/               # Configurações GitHub
+│   └── workflows/deploy.yml  # CI/CD para GitHub Pages
+├── index.html                # Página principal
+├── README.md                 # Documentação principal
+└── .gitignore               # Arquivos ignorados
 ```
+
+### 🎯 Benefícios da Nova Estrutura
+
+- **📁 Organização Modular**: Cada tipo de arquivo em sua pasta específica
+- **🔍 Fácil Manutenção**: Localização rápida de qualquer componente
+- **📈 Escalabilidade**: Preparado para crescimento do projeto
+- **👥 Colaboração**: Estrutura familiar para desenvolvedores
+- **🚀 Deploy Otimizado**: Organização ideal para CI/CD
 
 ## ⚙️ Configuração e Instalação
 

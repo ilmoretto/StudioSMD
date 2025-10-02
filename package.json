@@ -1,0 +1,39 @@
+{
+  "name": "osmanager-studio-smd",
+  "version": "2.0.0",
+  "description": "Sistema de Gerenciamento de Ordens de Serviço para Studio SMD || Studio Sonata Música e Dança",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 3000",
+    "deploy": "echo 'Deploy automático via GitHub Pages'",
+    "backup": "cp src/css/styles.css src/css/styles-backup-$(date +%Y%m%d).css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ilmoretto/StudioSMD.git"
+  },
+  "keywords": [
+    "ordem-de-servico",
+    "studio-smd",
+    "firebase",
+    "javascript",
+    "gestao-clientes",
+    "responsivo"
+  ],
+  "author": "GitHub Copilot",
+  "license": "MIT",
+  "homepage": "https://sonatoads.github.io/OSManager/",
+  "dependencies": {
+    "firebase": "^10.13.0"
+  },
+  "devDependencies": {},
+  "browserslist": [
+    "last 2 versions",
+    "> 1%",
+    "not dead"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
