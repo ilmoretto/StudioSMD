@@ -20,6 +20,8 @@ function initializeFirebase() {
 const SECURITY_CONFIG = { password: { minLength: 12, requireUppercase: true, requireLowercase: true, requireNumbers: true, requireSpecialChars: true } };
 // Admin principal (usado apenas para atribuir role automaticamente no primeiro perfil)
 const DEFAULT_ADMIN_EMAIL = 'conservatorio86@gmail.com';
+// Nome padrão do responsável técnico
+const TECHNICAL_RESPONSIBLE_NAME = 'Tassio Cristiano da Silva Pires';
 
 class SecurityAudit { static log(t,d={}){ const x={timestamp:new Date().toISOString(),t,d}; try{const k=JSON.parse(localStorage.getItem('audit_logs')||'[]'); k.push(x); if(k.length>1000)k.splice(0,k.length-1000); localStorage.setItem('audit_logs',JSON.stringify(k));}catch{} console.log('[AUDIT]',t,d);} }
 
@@ -284,7 +286,7 @@ class OSManagerApp {
         <!-- Cabeçalho da OS -->
         <h3 style="margin-top:16px">Ordem de Serviço</h3>
         <div class="os-header">
-          <div class="form-group"><label for="osNumber">Nº da OS</label><input type="text" id="osNumber" placeholder="Gerado automaticamente" disabled/><small class="field-hint">Gerado automaticamente</small></div>
+          <div class="form-group"><label for="osNumber">Nº da OS</label><input type="text" id="osNumber" placeholder="Gerado automaticamente" disabled readonly/></div>
           <div class="form-group"><label for="osDate">Data</label><input type="date" id="osDate" class="input-compact"/></div>
         </div>
 
@@ -512,7 +514,7 @@ class OSManagerApp {
       executionDate: this.formatDate(document.getElementById('execDate').value),
       executionTime: document.getElementById('execTime').value,
       estimatedTime: (document.querySelector('input[name="estimatedTime"]:checked')||{}).value || '',
-  technicalResponsible: 'Tassio Cristiano da Silva Pires',
+  technicalResponsible: TECHNICAL_RESPONSIBLE_NAME,
       totalValue: document.getElementById('totalValue').value,
       paymentMethods: Array.from(document.querySelectorAll('input[name="payment"]:checked')).map(cb=>cb.value),
       paymentDate: this.formatDate(document.getElementById('paymentDate').value),
