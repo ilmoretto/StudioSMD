@@ -18,12 +18,27 @@ function initializeFirebase() {
 }
 
 const SECURITY_CONFIG = { password: { minLength: 12, requireUppercase: true, requireLowercase: true, requireNumbers: true, requireSpecialChars: true } };
-const DEFAULT_ADMIN_EMAIL = 'morete.alencar@gmail.com';
+// Admin principal (usado apenas para atribuir role automaticamente no primeiro perfil)
+const DEFAULT_ADMIN_EMAIL = 'conservatorio86@gmail.com';
 
 class SecurityAudit { static log(t,d={}){ const x={timestamp:new Date().toISOString(),t,d}; try{const k=JSON.parse(localStorage.getItem('audit_logs')||'[]'); k.push(x); if(k.length>1000)k.splice(0,k.length-1000); localStorage.setItem('audit_logs',JSON.stringify(k));}catch{} console.log('[AUDIT]',t,d);} }
 
 class OSManagerApp {
-  constructor(){ this.currentUser=null; this.userRole=null; this.clients=[]; this.orders=[]; this.users=[]; this.unsubscribeClients=null; this.unsubscribeOrders=null; this._appButtonsBound=false; this._sidebarDelegated=false; this.init(); }
+  constructor(){
+    this.currentUser=null; this.userRole=null; this.clients=[]; this.orders=[]; this.users=[];
+    this.unsubscribeClients=null; this.unsubscribeOrders=null;
+    this._appButtonsBound=false; this._sidebarDelegated=false;
+    // Inatividade: 20 minutos (1200000 ms)
+    this.idleTimeoutMs = 20 * 60 * 1000;
+    this.idleTimer = null;
+    this._idleBound = false;
+    this._idleResetHandler = null;
+    this.init();
+  }
+  getStatusLabel(code){
+    const map={ pending:'Pendente', progress:'Em Andamento', completed:'Concluída' };
+    return map[code]||code||'';
+  }
   init(){ this.setupAuth(); this.setupUI(); this.setupSidebar(); }
   setupAuth(){
     if (!auth) return;
@@ -45,8 +60,21 @@ class OSManagerApp {
     });
   }
   showLogin(){ document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('appScreen').classList.add('hidden'); this.bindLoginForms(); }
-  showApp(){ document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); document.getElementById('userName').textContent = this.currentUser?.displayName || this.currentUser?.email || 'Usuário'; document.getElementById('userRole').textContent='Carregando...'; // oculta admin até carregar perfil
-    document.querySelectorAll('.admin-only').forEach(el=> el.style.display='none');
+  showApp(){
+    const loginScr=document.getElementById('loginScreen');
+    const appScr=document.getElementById('appScreen');
+    if(loginScr) loginScr.classList.add('hidden');
+    if(appScr) appScr.classList.remove('hidden');
+    const nameLabel=document.getElementById('userName');
+    if(nameLabel) nameLabel.textContent = this.currentUser?.displayName || this.currentUser?.email || 'Usuário';
+    const roleLabel=document.getElementById('userRole');
+    if(roleLabel){
+      // Limpa qualquer texto de cargo (exibição suprimida por requisito)
+      roleLabel.textContent='';
+      roleLabel.title = this.userRole || '';
+    }
+    // Força todos admin-only ocultos (menu removido)
+    document.querySelectorAll('.admin-only').forEach(el=>{ el.style.display='none'; });
     // garante modo expandido por padrão ao entrar
     document.body.classList.remove('sidebar-collapsed');
     this.bindAppButtons();
@@ -55,6 +83,8 @@ class OSManagerApp {
     document.getElementById('dashboard-view')?.classList.add('active');
     // Abre o dropdown de Ordens apenas na primeira carga da sessão (evita sensação de desaparecido)
     try{ if(!sessionStorage.getItem('submenuInitialOpen')){ this.openSubmenu('orders-submenu'); const item=document.querySelector('.nav-item.has-submenu[data-target="orders-submenu"]'); item?.scrollIntoView({block:'nearest'}); sessionStorage.setItem('submenuInitialOpen','1'); } } catch{}
+    // Inicia rastreamento de inatividade após exibir app
+    this.setupIdleTracking();
   }
 
   openSubmenu(id){ const submenu=document.getElementById(id); if(!submenu) return; submenu.classList.add('open'); submenu.style.display='block'; const item=submenu.previousElementSibling; if(item && item.classList.contains('nav-item')) item.classList.add('open'); }
@@ -78,19 +108,25 @@ class OSManagerApp {
         }
       }
     } catch(e){ console.warn('Falha ao garantir perfil do usuário', e); this.userRole='user'; }
-    this.updateRoleUI();
+    this.updateRoleUI(); // aplica estado final quando perfil confirmado
   }
 
   updateRoleUI(){
-    const label=document.getElementById('userRole'); if(label) label.textContent = this.userRole==='admin' ? 'Administrador' : 'Usuário';
-    document.querySelectorAll('.admin-only').forEach(el=> el.style.display = this.userRole==='admin' ? '' : 'none');
+    // Mantém this.userRole para lógica interna, mas oculta a visualização textual do cargo
+    const label=document.getElementById('userRole');
+    if(label){
+      // Esvazia o texto do cargo para mostrar só o nome do usuário na topbar
+      label.textContent='';
+      // Opcional: poderia adicionar um title se quiser ver ao passar mouse
+      label.title = this.userRole ? (this.userRole==='admin' ? 'Administrador' : 'Usuário') : '';
+      // Também pode usar data-attribute para debug
+      label.setAttribute('data-role', this.userRole||'');
+    }
+    // Elementos admin-only permanecem ocultos (requisito anterior de remover menu de gestão)
+    document.querySelectorAll('.admin-only').forEach(el=> el.style.display='none');
   }
 
-  setupUI(){ this.bindLoginForms();
-    // Prefill default admin email in forms (if empty)
-    const le=document.getElementById('loginEmail'); if(le && !le.value) le.value=DEFAULT_ADMIN_EMAIL;
-    const re=document.getElementById('registerEmail'); if(re && !re.value) re.value=DEFAULT_ADMIN_EMAIL;
-  }
+  setupUI(){ this.bindLoginForms(); }
   // Mantido por compatibilidade: lógica da sidebar está em bindAppButtons
   setupSidebar(){ /* noop - sidebar handled in bindAppButtons */ }
   bindLoginForms(){ const showReg=document.getElementById('showRegister'); const showLogin=document.getElementById('showLogin'); if (showReg) showReg.addEventListener('click',(e)=>{e.preventDefault(); document.getElementById('registerForm').classList.remove('hidden'); document.querySelector('#loginForm').parentElement.classList.add('hidden');}); if (showLogin) showLogin.addEventListener('click',(e)=>{e.preventDefault(); document.getElementById('registerForm').classList.add('hidden'); document.querySelector('#loginForm').parentElement.classList.remove('hidden');}); const pwd=document.getElementById('registerPassword'); const confirm=document.getElementById('confirmPassword'); if(pwd) pwd.addEventListener('input',(e)=>this.updatePasswordUI(e.target.value)); if(confirm) confirm.addEventListener('input',(e)=>this.updateConfirmUI(pwd.value,e.target.value)); const lf=document.getElementById('loginForm'); if(lf) lf.addEventListener('submit',(e)=>this.handleLogin(e)); const rf=document.getElementById('registerFormSubmit'); if(rf) rf.addEventListener('submit',(e)=>this.handleFirstPassword(e)); }
@@ -170,6 +206,14 @@ class OSManagerApp {
       // encerra listeners antes de sair
       try{ this.unsubscribeClients?.(); }catch{}
       try{ this.unsubscribeOrders?.(); }catch{}
+      // Limpa timer de inatividade
+      if(this.idleTimer){ clearTimeout(this.idleTimer); this.idleTimer=null; }
+      // Remove listeners de inatividade (serão re-adicionados no próximo login)
+      if(this._idleBound && this._idleResetHandler){
+        ['mousemove','keydown','click','scroll','touchstart'].forEach(ev=> window.removeEventListener(ev,this._idleResetHandler));
+        document.removeEventListener('visibilitychange', this._idleVisibilityHandler);
+        this._idleBound=false;
+      }
       await auth.signOut();
       document.getElementById('logoutModal').classList.add('hidden');
       this.toast('Logout realizado','success');
@@ -188,8 +232,7 @@ class OSManagerApp {
       else if(viewId==='orders-list-view') view.innerHTML=this.tplOrdersList();
       else if(viewId==='new-client-view') view.innerHTML=this.tplNewClient();
       else if(viewId==='clients-list-view') view.innerHTML=this.tplClientsList();
-      else if(viewId==='users-management-view') view.innerHTML=this.tplUsersManagement();
-      else if(viewId==='audit-logs-view') view.innerHTML=this.tplAuditLogs();
+  // Removidos: users-management-view e audit-logs-view (ocultados por requisito)
       else view.innerHTML=this.tplPlaceholder('Página');
       document.getElementById('mainContent').appendChild(view);
       this.wireView(viewId);
@@ -469,7 +512,7 @@ class OSManagerApp {
       executionDate: this.formatDate(document.getElementById('execDate').value),
       executionTime: document.getElementById('execTime').value,
       estimatedTime: (document.querySelector('input[name="estimatedTime"]:checked')||{}).value || '',
-      technicalResponsible: 'Tassio Pires de Oliveira',
+  technicalResponsible: 'Tassio Cristiano da Silva Pires',
       totalValue: document.getElementById('totalValue').value,
       paymentMethods: Array.from(document.querySelectorAll('input[name="payment"]:checked')).map(cb=>cb.value),
       paymentDate: this.formatDate(document.getElementById('paymentDate').value),
@@ -507,7 +550,7 @@ class OSManagerApp {
         const printBtn = `<button class=\"btn btn-secondary btn-sm\" data-action=\"print\" data-id=\"${o.id}\"><i class=\"fas fa-print\"></i> Imprimir</button>`;
         const reopenBtn = o.status==='completed'? `<button class=\"btn btn-warning btn-sm\" data-action=\"reopen\" data-id=\"${o.id}\"><i class=\"fas fa-rotate-left\"></i> Reabrir</button>` : '';
         const completeBtn = o.status!=='completed'? `<button class=\"btn btn-success btn-sm\" data-action=\"complete\" data-id=\"${o.id}\"><i class=\"fas fa-check\"></i> Concluir</button>` : '';
-        return `<tr data-row-id="${o.id}"><td>${o.number}</td><td>${o.client?.name||''}</td><td>${(o.description||'').slice(0,80)}</td><td>${o.totalValue||'R$ 0,00'}</td><td class="status-cell">${o.status||''}</td><td>${o.date||''}</td><td><div class="actions">${viewBtn} ${printBtn} ${completeBtn} ${reopenBtn}</div></td></tr>`;
+  return `<tr data-row-id="${o.id}"><td>${o.number}</td><td>${o.client?.name||''}</td><td>${(o.description||'').slice(0,80)}</td><td>${o.totalValue||'R$ 0,00'}</td><td class="status-cell" data-status="${o.status||''}">${this.getStatusLabel(o.status)}</td><td>${o.date||''}</td><td><div class="actions">${viewBtn} ${printBtn} ${completeBtn} ${reopenBtn}</div></td></tr>`;
       }).join('') : `<tr><td colspan=\"7\" class=\"no-data\">Nenhum registro</td></tr>`;
       // bind ações
       tbody.querySelectorAll('button[data-action]').forEach(btn=>{
@@ -534,7 +577,7 @@ class OSManagerApp {
   filter?.addEventListener('input',render); status?.addEventListener('change',render); document.getElementById('clearOrdersFilters')?.addEventListener('click',()=>{ if(filter) filter.value=''; if(status) status.value=''; render(); }); render(); }
 
   // Atualização otimista dos botões e status na linha da tabela
-  optimisticOrderUpdate(row, newStatus){ if(!row) return; const statusCell=row.querySelector('.status-cell'); if(statusCell) statusCell.textContent=newStatus; const actions=row.querySelector('.actions'); if(!actions) return; const id=row.getAttribute('data-row-id'); const viewBtn=`<button class="btn btn-secondary btn-sm" data-action="view" data-id="${id}"><i class="fas fa-eye"></i> Visualizar</button>`; const printBtn=`<button class="btn btn-secondary btn-sm" data-action="print" data-id="${id}"><i class="fas fa-print"></i> Imprimir</button>`; const completeBtn = newStatus!=='completed'? `<button class="btn btn-success btn-sm" data-action="complete" data-id="${id}"><i class="fas fa-check"></i> Concluir</button>`: '' ; const reopenBtn = newStatus==='completed'? `<button class="btn btn-warning btn-sm" data-action="reopen" data-id="${id}"><i class="fas fa-rotate-left"></i> Reabrir</button>`: '' ; actions.innerHTML = `${viewBtn} ${printBtn} ${completeBtn} ${reopenBtn}`; // rebind recém-criados rapidamente
+  optimisticOrderUpdate(row, newStatus){ if(!row) return; const statusCell=row.querySelector('.status-cell'); if(statusCell){ statusCell.textContent=this.getStatusLabel(newStatus); statusCell.setAttribute('data-status', newStatus);} const actions=row.querySelector('.actions'); if(!actions) return; const id=row.getAttribute('data-row-id'); const viewBtn=`<button class="btn btn-secondary btn-sm" data-action="view" data-id="${id}"><i class="fas fa-eye"></i> Visualizar</button>`; const printBtn=`<button class="btn btn-secondary btn-sm" data-action="print" data-id="${id}"><i class="fas fa-print"></i> Imprimir</button>`; const completeBtn = newStatus!=='completed'? `<button class="btn btn-success btn-sm" data-action="complete" data-id="${id}"><i class="fas fa-check"></i> Concluir</button>`: '' ; const reopenBtn = newStatus==='completed'? `<button class="btn btn-warning btn-sm" data-action="reopen" data-id="${id}"><i class="fas fa-rotate-left"></i> Reabrir</button>`: '' ; actions.innerHTML = `${viewBtn} ${printBtn} ${completeBtn} ${reopenBtn}`; // rebind recém-criados rapidamente
     actions.querySelectorAll('button[data-action]').forEach(btn=>{
       const act=btn.getAttribute('data-action'); const bid=btn.getAttribute('data-id'); btn.addEventListener('click', async ()=>{
         const order=this.orders.find(x=>x.id===bid); if(!order) return;
@@ -568,6 +611,146 @@ class OSManagerApp {
   async completeOrder(id){ await db.collection('users').doc(this.currentUser.uid).collection('orders').doc(id).update({ status:'completed', completedAt: firebase.firestore.FieldValue.serverTimestamp(), lastEvent:'completed' }); this.toast('OS concluída','success'); }
   async reopenOrder(id){ await db.collection('users').doc(this.currentUser.uid).collection('orders').doc(id).update({ status:'pending', reopenedAt: firebase.firestore.FieldValue.serverTimestamp(), lastEvent:'reopened' }); this.toast('OS reaberta','success'); }
   openPrint(o){ const w=window.open('','_blank'); w.document.write(this.generatePrintHTML(o)); w.document.close(); setTimeout(()=>w.print(),400); }
+
+  generatePrintHTML(order){
+    // Garantias básicas
+    const services = (order.services||[]);
+    const groups = this.parseServicesByCategory(services);
+    const listBlock = (title, arr)=> arr && arr.length? `<div class="svc-col"><h4>${title}</h4><ul>${arr.map(i=>`<li>${i}</li>`).join('')}</ul></div>`: '';
+    const today = new Date();
+    const fmtDate = d=> d? d: '';
+    const client = order.client||{};
+    const payments = (order.paymentMethods||[]).join(', ')||'—';
+    const logoPath = './img/logo.png'; // relativo à janela de impressão (mesmo host)
+    // Info da empresa (pode ser sobrescrito antes da impressão via window.COMPANY_INFO)
+    const company = (typeof window !== 'undefined' && window.COMPANY_INFO) ? window.COMPANY_INFO : {
+      name: '',
+      cnpj: '',
+      phone: '',
+      email: '',
+      site: '',
+      address: ''
+    };
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/>
+      <title>OS ${order.number||''}</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <style>
+  :root{--ink:#0f172a;--ink-soft:#475569;--brand:#1e3a8a;--border:#7f8c99;--border-strong:#566374;--border-header:#d2dde9;--bg:#ffffff;--bg-alt:#f5f8fc;--radius:10px;--accent:#2563eb;}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,Arial,sans-serif;}
+  body{background:#f1f5fa;color:var(--ink);padding:32px;position:relative;overflow:visible;}
+  .watermark{position:fixed;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;z-index:0;font-size:68px;font-weight:700;letter-spacing:4px;font-family:Inter,Arial,sans-serif;color:rgba(30,58,138,.06);transform:rotate(-24deg);user-select:none;text-transform:uppercase}
+  header.print-header{display:flex;align-items:flex-start;gap:18px;margin-bottom:24px;padding:16px 22px;border:1.15px solid var(--border-strong);border-radius:16px;background:linear-gradient(135deg,#ffffff 0%,#f3f7fb 85%);box-shadow:0 4px 12px -4px rgba(0,0,0,.12)}
+        .logo-box{width:72px;height:72px;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e2e8f0}
+        .logo-box img{max-width:100%;max-height:100%;object-fit:contain}
+  .doc-meta h1{font-size:22px;letter-spacing:.5px;color:var(--brand);margin:0 0 6px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .doc-meta small{display:block;color:var(--ink-soft);font-size:12px;font-weight:500;letter-spacing:.5px}
+  .company-block{margin-top:2px;display:flex;flex-direction:column;gap:2px;font-size:11px;line-height:1.25;color:var(--ink-soft);font-weight:500;max-width:640px}
+  .company-block .address{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-soft)}
+  .company-block .contact{white-space:nowrap;}
+  .company-block .phone{white-space:nowrap;}
+  .company-block .generated{margin-top:2px;}
+  .company-block .generated strong{color:var(--ink);font-weight:700;font-size:11px}
+  .company-inline{display:block;margin-top:4px;color:var(--ink-soft);font-size:11px;line-height:1.3;font-weight:500;max-width:520px}
+  .company-inline strong{color:var(--ink);font-weight:600}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:4px}
+  .panel{background:var(--bg);border:1.15px solid var(--border-strong);padding:14px 16px;border-radius:var(--radius);position:relative}
+        .panel h3{font-size:14px;text-transform:uppercase;letter-spacing:.8px;font-weight:600;color:var(--ink-soft);margin:0 0 10px}
+        .kv{display:grid;grid-template-columns:130px 1fr;row-gap:6px;font-size:13px}
+        .kv strong{font-weight:600;color:var(--ink-soft)}
+        .services-wrapper{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:10px}
+        .svc-col h4{font-size:13px;margin:0 0 6px;color:var(--brand);text-transform:uppercase;letter-spacing:.7px}
+        .svc-col ul{list-style:disc;margin-left:18px;display:flex;flex-direction:column;gap:3px;font-size:12px}
+  .desc-box{margin-top:14px;background:var(--bg-alt);border:1.15px solid var(--border-strong);padding:14px 16px;border-radius:var(--radius);font-size:13px;line-height:1.5}
+  .footer{margin-top:32px;display:flex;justify-content:space-between;align-items:flex-start;gap:32px}
+  .sign-group{flex:1;display:flex;flex-direction:column;gap:22px}
+  .sign-box{position:relative;flex:1;min-height:120px;border:1.2px solid var(--border-strong);border-radius:12px;padding:18px 18px 14px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(135deg,#ffffff 0%,#f7f9fc 100%)}
+  .sign-label{position:absolute;top:10px;left:16px;font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--ink-soft)}
+  .sign-line{height:2px;background:#000;width:100%;margin-top:auto;margin-bottom:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sign-name{font-size:12px;font-weight:600;color:var(--ink);text-align:center;margin:0;padding-top:2px}
+  .sign-hint{font-size:10px;color:var(--ink-soft);margin-top:2px;text-align:center;display:none}
+  .print-badge{font-size:11px;color:var(--ink-soft);text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end;justify-content:flex-end}
+  .dev-credit{font-size:10px;color:var(--ink-soft);letter-spacing:1px;text-transform:uppercase;opacity:.7}
+  .status-wrapper{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4f9,#e4ecf4);padding:3px 6px;border:1px solid var(--border-strong);border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 1px rgba(255,255,255,.6) inset}
+  .status-pill{display:inline-block;padding:4px 12px;border-radius:18px;font-size:11px;font-weight:600;letter-spacing:.4px;line-height:1;position:relative;min-width:82px;text-align:center;background:#e2e8f0;color:#334155;box-shadow:0 1px 2px rgba(0,0,0,.08) inset}
+  .status-pill[data-status="completed"]{background:#d1fae5;color:#065f46}
+  .status-pill[data-status="pending"]{background:#fde68a;color:#92400e}
+  .status-pill[data-status="progress"]{background:#dbeafe;color:#1e40af}
+        .value{font-weight:600;color:var(--brand)}
+        @media print{body{padding:16px;background:#fff} header.print-header{box-shadow:none;margin-bottom:18px} .panel, .desc-box{box-shadow:none} .print-hide{display:none !important} .watermark{font-size:48px} }
+      </style>
+    </head><body>
+      <div class="watermark">Developed by ILMORETTO</div>
+      <header class="print-header">
+        <div class="logo-box"><img src="${logoPath}" alt="Logo" onerror="this.style.display='none'"></div>
+        <div class="doc-meta" style="flex:1;">
+          <h1>Ordem de Serviço <span>#${order.number||''}</span></h1>
+          <div class="company-block">
+            ${company.address?`<div class="address">${company.address}</div>`:''}
+            ${(company.site||company.email)?`<div class="contact">${company.site||''}${(company.site&&company.email)?' - ':''}${company.email?('E-mail '+company.email):''}</div>`:''}
+            ${company.phone?`<div class="phone">${company.phone}</div>`:''}
+            <div class="generated"><strong>Gerada em ${today.toLocaleDateString('pt-BR')} às ${today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</strong></div>
+          </div>
+          <div style="margin-top:8px" class="status-wrapper"><span class="status-pill" data-status="${order.status||'pending'}">${this.getStatusLabel(order.status||'pending')}</span></div>
+        </div>
+      </header>
+      <section class="grid">
+        <div class="panel">
+          <h3>Identificação</h3>
+          <div class="kv">
+            <strong>Cliente:</strong><span>${client.name||''}</span>
+            <strong>E-mail:</strong><span>${client.email||''}</span>
+            <strong>Telefone:</strong><span>${this.formatPhoneDisplay(client.phone||'')}</span>
+            <strong>Data OS:</strong><span>${order.date||''}</span>
+            <strong>Execução:</strong><span>${fmtDate(order.executionDate)} ${order.executionTime||''}</span>
+            <strong>Tempo Est.:</strong><span>${order.estimatedTime||'—'}</span>
+            <strong>Responsável:</strong><span>${order.technicalResponsible||'—'}</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Financeiro</h3>
+          <div class="kv">
+            <strong>Valor:</strong><span class="value">${order.totalValue||'R$ 0,00'}</span>
+            <strong>Pagamentos:</strong><span>${payments}</span>
+            <strong>Data Pagto:</strong><span>${order.paymentDate||'—'}</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Serviços</h3>
+          <div class="services-wrapper">
+            ${listBlock('Pré-produção', groups.pre)}
+            ${listBlock('Produção', groups.prod)}
+            ${listBlock('Pós-produção', groups.pos)}
+            ${listBlock('Outros', groups.outros)}
+          </div>
+        </div>
+      </section>
+      <div class="desc-box">
+        <h3 style="margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-soft)">Descrição Detalhada</h3>
+        ${ (order.description||'').replace(/\n/g,'<br/>') || '<em style="color:var(--ink-soft)">Sem descrição fornecida.</em>' }
+      </div>
+      <div class="footer">
+        <div class="sign-group">
+          <div class="sign-box">
+            <span class="sign-label">Cliente</span>
+            <div class="sign-line"></div>
+            <div class="sign-name">${client.name||''}</div>
+          </div>
+        </div>
+        <div class="sign-group">
+          <div class="sign-box">
+            <span class="sign-label">Responsável Técnico</span>
+            <div class="sign-line"></div>
+            <div class="sign-name">${order.technicalResponsible||'—'}</div>
+          </div>
+        </div>
+        <div class="print-badge">
+          <div>Impresso em ${today.toLocaleDateString('pt-BR')}</div>
+          <div>Sistema OSManager</div>
+          <div class="dev-credit">Developed by ilmoretto</div>
+        </div>
+      </div>
+    </body></html>`;
+  }
 
   // NEW CLIENT
   wireNewClient(){ const f=document.getElementById('newClientForm'); if(!f) return; f.addEventListener('submit', async (e)=>{ e.preventDefault(); const payload={ name:document.getElementById('clientName').value.trim(), email:document.getElementById('clientEmail').value.trim(), phone:(document.getElementById('clientPhone').value||'').replace(/\D/g,''), cpf:(document.getElementById('clientCPF').value||'').replace(/\D/g,''), address:document.getElementById('clientAddress').value.trim() }; if(!payload.name||!payload.email){ this.toast('Nome e e-mail são obrigatórios','error'); return; } try{ const col=db.collection('users').doc(this.currentUser.uid).collection('clients'); const editId=f.dataset.editId; if(editId){ await col.doc(editId).update({ ...payload, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); this.toast('Cliente atualizado','success'); delete f.dataset.editId; const submit=f.querySelector('button[type="submit"]'); if(submit) submit.textContent='Salvar Cliente'; } else { await col.add({ ...payload, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); this.toast('Cliente salvo','success'); } f.reset(); } catch{ this.toast('Erro ao salvar cliente','error'); } }); }
@@ -654,7 +837,47 @@ class OSManagerApp {
   }
 
   // Atividade recente: ordens abertas/concluídas/reabertas
-  renderRecentActivity(){ const box=document.getElementById('recentActivity'); if(!box) return; const events=[]; (this.orders||[]).forEach(o=>{ if(o.createdAt?.toDate){ events.push({type:'Aberta', time:o.createdAt.toDate(), text:`OS ${o.number} - ${o.client?.name||''} aberta`}); } if(o.completedAt?.toDate){ events.push({type:'Concluída', time:o.completedAt.toDate(), text:`OS ${o.number} concluída`}); } if(o.reopenedAt?.toDate){ events.push({type:'Reaberta', time:o.reopenedAt.toDate(), text:`OS ${o.number} reaberta`}); } }); events.sort((a,b)=> b.time - a.time); const last = events.slice(0,10); if(!last.length){ box.innerHTML='<p class="no-data">Sem atividades recentes</p>'; return; } box.innerHTML = last.map(e=>`<div class="activity-item"><strong>${e.type}</strong> • ${e.time.toLocaleString('pt-BR')} — ${e.text}</div>`).join(''); }
+  renderRecentActivity(){
+    const box=document.getElementById('recentActivity'); if(!box) return;
+    // Gera cache completo de eventos
+    const events=[];
+    (this.orders||[]).forEach(o=>{
+      const baseTxt = `OS ${o.number} - ${o.client?.name||''}`;
+      if(o.createdAt?.toDate){ events.push({type:'Aberta', time:o.createdAt.toDate(), text: baseTxt, order:o}); }
+      if(o.completedAt?.toDate){ events.push({type:'Concluída', time:o.completedAt.toDate(), text: baseTxt, order:o}); }
+      if(o.reopenedAt?.toDate){ events.push({type:'Reaberta', time:o.reopenedAt.toDate(), text: baseTxt, order:o}); }
+    });
+    events.sort((a,b)=> b.time - a.time);
+
+    // Recupera filtros
+    const typeSel = document.getElementById('activityTypeFilter');
+    const searchInput = document.getElementById('activitySearch');
+    const q = (searchInput?.value||'').toLowerCase();
+    const typeFilter = typeSel?.value||'';
+
+    const filtered = events.filter(ev=>{
+      const typeOk = typeFilter? ev.type===typeFilter : true;
+      if(!typeOk) return false;
+      if(!q) return true;
+      const hay = `${ev.text} ${ev.order?.number||''} ${ev.order?.client?.name||''}`.toLowerCase();
+      return hay.includes(q);
+    });
+
+    const slice = filtered.slice(0,30); // mostra mais resultados se filtrado
+    if(!slice.length){ box.innerHTML='<p class="no-data">Sem atividades para os filtros</p>'; }
+    else {
+      box.innerHTML = slice.map(e=>`<div class="activity-item"><strong>${e.type}</strong> • ${e.time.toLocaleString('pt-BR')} — ${e.text}</div>`).join('');
+    }
+
+    // Liga eventos de filtro apenas uma vez
+    if(!this._activityFiltersBound){
+      if(typeSel) typeSel.addEventListener('change',()=> this.renderRecentActivity());
+      if(searchInput) searchInput.addEventListener('input',()=> this.renderRecentActivity());
+      const clearBtn=document.getElementById('activityClear');
+      if(clearBtn) clearBtn.addEventListener('click',()=>{ if(searchInput){ searchInput.value=''; searchInput.focus(); } this.renderRecentActivity(); });
+      this._activityFiltersBound = true;
+    }
+  }
   loadDashboard(){
     // Atualiza cartões do dashboard
     const totalOrders = this.orders.length;
@@ -700,8 +923,36 @@ class OSManagerApp {
 
   toast(msg,type='info'){ const n=document.createElement('div'); n.style.cssText=`position:fixed;top:20px;right:20px;padding:14px 18px;background:${type==='success'?'#16a34a': type==='error'?'#dc2626':'#334155'};color:#fff;border-radius:10px;z-index:9999;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25)`; n.textContent=msg; document.body.appendChild(n); setTimeout(()=>{n.style.opacity='0'; setTimeout(()=>n.remove(),300)},2400); }
 
-  // Impressão de OS (serviços agrupados por categoria)
-  generatePrintHTML(data){ const g=this.parseServicesByCategory(data.services||[]); const list=(items)=> items.length? `<ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul>`:'<div>—</div>'; const paymentHTML = (data.paymentMethods||[]).length? data.paymentMethods.join(', '): 'Não informado'; const signatureDate = new Date().toLocaleDateString('pt-BR'); return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ordem de Serviço #${data.number}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;padding:40px;font-size:12pt;line-height:1.6;} .header{text-align:center;margin-bottom:30px;border-bottom:3px solid #1e3a8a;padding-bottom:20px;} .header h1{font-size:24pt;margin-bottom:10px;color:#1e3a8a;} .os-info{display:flex;justify-content:space-between;margin:12px 0;font-weight:bold;} .section{margin:16px 0;border:1px solid #ccc;padding:12px;} .section h2{font-size:14pt;margin-bottom:10px;color:#1e3a8a;border-bottom:2px solid #3b82f6;padding-bottom:4px;} .services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px} .services-group h3{font-size:12pt;margin:6px 0} .services-group ul{margin-left:18px;margin-top:6px} .description{background:#f8fafc;padding:10px;margin:10px 0;min-height:60px;border-left:4px solid #3b82f6;} .signatures{display:flex;justify-content:space-between;margin-top:40px;padding-top:12px;} .signature-box{text-align:center;flex:1;margin:0 16px;} .signature-line{border-top:2px solid #000;margin-bottom:8px;padding-top:5px;} .print-button{position:fixed;top:20px;right:20px;padding:10px 18px;background:#1e3a8a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12pt;font-weight:bold;} @media print{.print-button{display:none} body{padding:20px;}}</style></head><body><button class="print-button" onclick="window.print()">Imprimir</button><div class="header"><h1>ORDEM DE SERVIÇO</h1><div class="studio-info"><strong>Studio SMD</strong></div><div class="contact-info">Praça da Liberdade, 104 - União - Ouro Preto do Oeste - RO - 76.920-000<br/>linktr.ee/sonata_md - E-mail: conservatorio86@gmail.com<br/>Fone: (69) 99224-6426</div></div><div class="os-info"><div>Nº: <span>${data.number}</span></div><div>Data: <span>${data.date||''}</span></div></div><div class="section"><h2>Dados do Cliente</h2><div class="client-info"><p><strong>Nome:</strong> ${data.client?.name||''}</p><p><strong>Telefone:</strong> ${(this.formatPhoneDisplay(data.client?.phone||''))}</p><p><strong>CPF:</strong> ${data.client?.cpf||'Não informado'}</p><p><strong>RG:</strong> ${data.client?.rg||'Não informado'}</p><p><strong>E-mail:</strong> ${data.client?.email||'Não informado'}</p><p><strong>Endereço:</strong> ${data.client?.address||'Não informado'}</p></div></div><div class="section"><h2>Detalhamento do Serviço</h2><div class="services-grid"><div class="services-group"><h3>Pré-produção</h3>${list(g.pre)}</div><div class="services-group"><h3>Produção</h3>${list(g.prod)}</div><div class="services-group"><h3>Pós-produção</h3>${list(g.pos)}</div></div>${g.outros.length? `<div class=\"services-group\" style=\"margin-top:10px\"><h3>Outros</h3>${list(g.outros)}</div>`:''}</div><div class="section"><h2>Descrição Detalhada</h2><div class="description">${data.description||'Nenhuma descrição fornecida.'}</div></div><div class="section"><h2>Agenda e Profissional</h2><p><strong>Data:</strong> ${data.executionDate||'Não informada'} &nbsp; <strong>Horário:</strong> ${data.executionTime||'Não informado'}</p><p><strong>Tempo Estimado:</strong> ${data.estimatedTime||'Não informado'}</p></div><div class="section"><h2>Condições e Valores</h2><p><strong>Valor Total:</strong> ${data.totalValue||'R$ 0,00'}</p><p><strong>Forma de Pagamento:</strong> ${paymentHTML}</p><p><strong>Pagamento Efetuado em:</strong> ${data.paymentDate||'Não informado'}</p></div><div class="signatures"><div class="signature-box"><div class="signature-line">Contratante</div><p>${data.client?.name||''}</p></div><div class="signature-box"><div class="signature-line">Responsável Técnico</div><p>Tassio Pires de Oliveira</p></div></div><div style="text-align:center;margin-top:16px;color:#666;">Ouro Preto do Oeste - RO, ${signatureDate}</div></body></html>`; }
+  // ===== Inatividade (auto logout) =====
+  setupIdleTracking(){
+    if(this._idleBound) { this.resetIdleTimer(); return; }
+    this._idleResetHandler = ()=> this.resetIdleTimer();
+    this._idleVisibilityHandler = ()=>{ if(document.visibilityState==='visible') this.resetIdleTimer(); };
+    ['mousemove','keydown','click','scroll','touchstart'].forEach(ev=> window.addEventListener(ev,this._idleResetHandler,{passive:true}));
+    document.addEventListener('visibilitychange', this._idleVisibilityHandler);
+    this._idleBound = true;
+    this.resetIdleTimer();
+  }
+  resetIdleTimer(){
+    if(this.idleTimer) clearTimeout(this.idleTimer);
+    // Se usuário não está logado, não agenda
+    if(!this.currentUser) return;
+    this.idleTimer = setTimeout(()=>{
+      // Evita corrida caso tenha feito logout manual antes de disparar
+      if(!this.currentUser) return;
+      this.toast('Sessão encerrada por inatividade','info');
+      this.logout();
+    }, this.idleTimeoutMs);
+  }
 }
 
-document.addEventListener('DOMContentLoaded',()=>{ if(initializeFirebase()){ window.osmApp=new OSManagerApp(); } else { document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#334155"><div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:32px;max-width:520px;text-align:center"><h2 style="color:#ef4444;margin:0 0 10px 0">Erro ao iniciar</h2><p>Não foi possível conectar ao Firebase.</p><button onclick="location.reload()" style="margin-top:10px" class="btn btn-primary">Tentar novamente</button></div></div>'; } });
+// Inicialização da aplicação após DOM pronto, evitando flash da tela de login
+document.addEventListener('DOMContentLoaded',()=>{
+  const loginScr=document.getElementById('loginScreen');
+  if(loginScr) loginScr.classList.add('hidden');
+  if(initializeFirebase()){
+    window.osmApp=new OSManagerApp();
+  } else {
+    document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8fafc;color:#334155"><div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:32px;max-width:520px;text-align:center"><h2 style="color:#ef4444;margin:0 0 10px 0">Erro ao iniciar</h2><p>Não foi possível conectar ao Firebase.</p><button onclick="location.reload()" style="margin-top:10px" class="btn btn-primary">Tentar novamente</button></div></div>';
+  }
+});

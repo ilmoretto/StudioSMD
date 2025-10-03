@@ -8,11 +8,23 @@
 
 body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f2f5f8; /* produção com fundo claro para impressão melhor */
+  background: linear-gradient(180deg,#eef4fb 0%, #e8f0fa 100%);
   min-height: 100vh;
   color: #2c3e50;
   line-height: 1.6;
 }
+
+/* Marca / Logo (caso sidebar ou header reutilize) */
+.sidebar-brand{padding:10px 8px 16px;border-bottom:1px solid #e2e8f0;margin:0 0 12px 0}
+.brand-logo-wrapper{display:flex;align-items:center;gap:10px}
+.brand-logo{max-width:44px;max-height:44px;display:block;border-radius:8px;object-fit:contain;background:#fff}
+/* Topbar (quando usado) maior que versão de sidebar antiga */
+header .brand-logo, .topbar .brand-logo{max-width:52px;max-height:52px;filter:none;}
+@media (max-width:768px){ header .brand-logo, .topbar .brand-logo{max-width:46px;max-height:46px;} }
+.brand-text{font-weight:600;font-size:16px;color:#1e3a8a;letter-spacing:.5px;white-space:nowrap}
+body.sidebar-collapsed .sidebar-brand{padding:10px 6px 12px}
+body.sidebar-collapsed .brand-text{display:none}
+body.sidebar-collapsed .brand-logo{max-width:40px;max-height:40px}
 
 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .hidden { display: none !important; }

@@ -94,7 +94,10 @@
         <header class="topbar">
             <div class="topbar-left">
                 <button id="sidebarToggle" class="sidebar-toggle"><i class="fas fa-bars"></i></button>
-                <h1 class="app-title"><i class="fas fa-tools"></i> OSManager</h1>
+                <h1 class="app-title">
+                    <img src="./img/logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
+                    <span style="margin-left:8px">OSManager</span>
+                </h1>
             </div>
             <div class="topbar-right">
                 <div class="user-info">
@@ -106,6 +109,7 @@
         </header>
         <aside class="sidebar" id="sidebar">
             <nav class="sidebar-nav">
+                <!-- Logo movido para a topbar; bloco removido -->
                 <div class="nav-section">
                     <div class="nav-item has-submenu" data-target="orders-submenu">
                         <i class="fas fa-clipboard-list"></i><span>Ordens de Serviço</span><i class="fas fa-chevron-down arrow"></i>
@@ -124,16 +128,7 @@
                         <a href="#" class="nav-link" data-view="clients-list"><i class="fas fa-users"></i> Visualizar Clientes</a>
                     </div>
                 </div>
-                <div class="nav-section admin-only" id="adminSection">
-                    <div class="nav-item has-submenu" data-target="admin-submenu">
-                        <i class="fas fa-cog"></i><span>Gestão</span><i class="fas fa-chevron-down arrow"></i>
-                    </div>
-                    <div class="submenu" id="admin-submenu">
-                        <a href="#" class="nav-link" data-view="users-management"><i class="fas fa-users-cog"></i> Usuários</a>
-                        <a href="#" class="nav-link" data-view="audit-logs"><i class="fas fa-history"></i> Logs de Auditoria</a>
-                        <a href="#" class="nav-link" data-view="system-config"><i class="fas fa-sliders-h"></i> Configurações</a>
-                    </div>
-                </div>
+                <!-- Seção de gestão removida conforme solicitação -->
             </nav>
         </aside>
         <main class="main-content" id="mainContent">
@@ -150,6 +145,18 @@
                 </div>
                 <div class="recent-activity">
                     <h2><i class="fas fa-clock"></i> Atividade Recente</h2>
+                    <div class="activity-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
+                        <select id="activityTypeFilter" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;min-width:140px">
+                            <option value="">Todos os tipos</option>
+                            <option value="Aberta">Abertas</option>
+                            <option value="Concluída">Concluídas</option>
+                            <option value="Reaberta">Reabertas</option>
+                        </select>
+                        <div style="position:relative;display:flex;align-items:center">
+                          <input id="activitySearch" type="text" placeholder="Buscar por OS ou cliente..." style="padding:6px 30px 6px 10px;border:1px solid #cbd5e1;border-radius:6px;min-width:240px"/>
+                          <button id="activityClear" type="button" style="position:absolute;right:4px;background:transparent;border:none;color:#64748b;cursor:pointer" title="Limpar">×</button>
+                        </div>
+                    </div>
                     <div class="activity-list" id="recentActivity"><p class="no-data">Carregando atividades...</p></div>
                 </div>
             </div>
@@ -164,6 +171,16 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <!-- Configuração Firebase -->
     <script src="./config/firebase-config.js"></script>
+        <script>
+            window.COMPANY_INFO = {
+                name: 'Studio SMD / Studio Sonata Música e Dança',
+                cnpj: '',
+                address: 'Praça da Liberdade, 104 - União - Ouro Preto do Oeste - 76.920-000',
+                site: 'linktr.ee/sonata_md',
+                email: 'conservatorio86@gmail.com',
+                phone: 'Fones (69) 99224-6426'
+            };
+        </script>
     <!-- App moderno -->
     <script src="./js/app-modern.js"></script>
 </body>
